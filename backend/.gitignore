@@ -1,0 +1,6 @@
+/vendor/
+.env
+/storage/logs/*
+/bootstrap/cache/*
+.DS_Store
+Thumbs.db
