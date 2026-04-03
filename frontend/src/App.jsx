@@ -9,6 +9,10 @@ import PrivateRoute from './routes/PrivateRoute.jsx';
 import Login from './pages/auth/Login.jsx';
 import Register from './pages/auth/Register.jsx';
 import ClientDashboard from './pages/client/ClientDashboard.jsx';
+import MyAppointments  from './pages/client/MyAppointments.jsx';
+import BookAppointment from './pages/client/BookAppointment.jsx';
+import Profile         from './pages/client/Profile.jsx';
+import Notifications   from './pages/client/Notifications.jsx';
 
 function App() {
   return (
@@ -33,6 +37,12 @@ function App() {
               </PrivateRoute>
             }
           />
+
+          {/* 🔒 Pages client */}
+          <Route path="/client/appointments"  element={<PrivateRoute roles={['client']}><MyAppointments /></PrivateRoute>} />
+          <Route path="/client/book"          element={<PrivateRoute roles={['client']}><BookAppointment /></PrivateRoute>} />
+          <Route path="/client/profile"       element={<PrivateRoute roles={['client']}><Profile /></PrivateRoute>} />
+          <Route path="/client/notifications" element={<PrivateRoute roles={['client']}><Notifications /></PrivateRoute>} />
 
           {/* autres dashboards (optionnel) */}
           <Route
