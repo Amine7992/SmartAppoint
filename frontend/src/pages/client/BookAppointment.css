@@ -1,0 +1,492 @@
+/* ===== STEP INDICATOR ===== */
+
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+    gap: 0;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    background: #fff;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.step-circle.active {
+    border-color: #042C53;
+    color: #042C53;
+}
+
+.step-circle.done {
+    border-color: #042C53;
+    background: #042C53;
+    color: #fff;
+}
+
+.step-label {
+    font-size: 12.5px;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.step-label.active {
+    color: #042C53;
+    font-weight: 600;
+}
+
+.step-label.done {
+    color: #6b7280;
+}
+
+.step-line {
+    width: 48px;
+    height: 2px;
+    background: #e5e7eb;
+    margin: 0 10px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.step-line.done {
+    background: #042C53;
+}
+
+
+/* ===== CONTAINER ===== */
+
+.book-container {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e9ecef;
+    padding: 28px 32px;
+    max-width: 780px;
+}
+
+.book-step {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+
+/* ===== SEARCH ===== */
+
+.book-search-bar {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.book-search-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+.book-search-input {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+    font-size: 13.5px;
+    color: #1a1a2e;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.book-search-input:focus {
+    border-color: #042C53;
+}
+
+
+/* ===== PROS GRID ===== */
+
+.pros-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pro-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.pro-card:hover {
+    border-color: #042C53;
+    background: #f7f9fc;
+}
+
+.pro-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pro-card-info {
+    flex: 1;
+}
+
+.pro-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 2px;
+}
+
+.pro-card-specialty {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin: 0 0 3px;
+}
+
+.pro-card-city,
+.pro-card-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+.pro-card-arrow {
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+
+/* ===== SELECTED PRO HEADER ===== */
+
+.book-selected-pro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f0f4fa;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.pro-mini-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pro-mini-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0;
+}
+
+.pro-mini-spec {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.book-subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 14px;
+}
+
+
+/* ===== SERVICES ===== */
+
+.services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.service-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.service-card:hover {
+    border-color: #042C53;
+    background: #f7f9fc;
+}
+
+.service-info {
+    flex: 1;
+}
+
+.service-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 3px;
+}
+
+.service-desc {
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0 0 5px;
+}
+
+.service-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.service-price {
+    color: #042C53;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+
+/* ===== DAYS SCROLL ===== */
+
+.days-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+}
+
+.days-scroll::-webkit-scrollbar {
+    height: 3px;
+}
+
+.days-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+
+.day-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.15s;
+    min-width: 56px;
+}
+
+.day-btn:hover {
+    border-color: #042C53;
+}
+
+.day-btn.active {
+    background: #042C53;
+    border-color: #042C53;
+}
+
+.day-name {
+    font-size: 11px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.day-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1;
+}
+
+.day-btn.active .day-name,
+.day-btn.active .day-num {
+    color: #fff;
+}
+
+.day-today-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #042C53;
+    position: absolute;
+    bottom: 5px;
+}
+
+.day-btn.active .day-today-dot {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+
+/* ===== TIME SLOTS ===== */
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.slot-btn {
+    padding: 8px 6px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+
+.slot-btn:hover {
+    border-color: #042C53;
+    color: #042C53;
+}
+
+.slot-btn.active {
+    background: #042C53;
+    border-color: #042C53;
+    color: #fff;
+}
+
+
+/* ===== SUMMARY & CONFIRM ===== */
+
+.book-confirm-section {
+    margin-top: 8px;
+}
+
+.book-summary {
+    background: #f7f9fc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.book-summary p {
+    font-size: 13px;
+    color: #374151;
+    margin: 0;
+}
+
+.book-summary strong {
+    color: #1a1a2e;
+}
+
+.book-recap-header {
+    background: #f0f4fa;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+}
+
+.recap-pro {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 2px;
+}
+
+.recap-service {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.btn-confirm {
+    width: 100%;
+    padding: 11px;
+    background: #042C53;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-confirm:hover {
+    background: #063a6e;
+}
+
+.btn-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* ===== BACK BTN ===== */
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 12px 0 0;
+    transition: color 0.15s;
+}
+
+.btn-back:hover {
+    color: #042C53;
+}
