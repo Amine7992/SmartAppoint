@@ -41,7 +41,7 @@ const StepIndicator = ({ current }) => (
   </div>
 );
 
-/* ─── Step 1 : choisir un pro ─── */
+/* ─── Step num 1 : choisir un pro ─── */
 const Step1 = ({ onSelect }) => {
   const [pros, setPros]     = useState([]);
   const [query, setQuery]   = useState('');
