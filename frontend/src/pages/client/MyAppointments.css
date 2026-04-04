@@ -1,0 +1,212 @@
+/* hérite du layout Dashboard.css */
+
+.ma-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+}
+
+.ma-filter-btn {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 13px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+}
+
+.ma-filter-btn:hover {
+    border-color: #042C53;
+    color: #042C53;
+}
+
+.ma-filter-btn.active {
+    background: #042C53;
+    border-color: #042C53;
+    color: #fff;
+}
+
+
+/* ===== CARDS ===== */
+
+.ma-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ma-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: box-shadow 0.15s;
+}
+
+.ma-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ma-date-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 48px;
+}
+
+.ma-day {
+    font-size: 26px;
+    font-weight: 700;
+    color: #042C53;
+    line-height: 1;
+}
+
+.ma-month {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.ma-divider {
+    width: 1px;
+    height: 48px;
+    background: #e9ecef;
+    flex-shrink: 0;
+}
+
+.ma-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ma-pro-name {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 3px;
+}
+
+.ma-service {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0 0 5px;
+}
+
+.ma-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.ma-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.ma-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.ma-btn-edit,
+.ma-btn-cancel {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ma-btn-edit {
+    color: #042C53;
+}
+
+.ma-btn-edit:hover {
+    background: #f0f4fa;
+    border-color: #042C53;
+}
+
+.ma-btn-cancel {
+    color: #ef4444;
+}
+
+.ma-btn-cancel:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+
+/* ===== BADGES ===== */
+
+.appt-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 11px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.badge-confirmed {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-past {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+
+/* ===== EMPTY ===== */
+
+.ma-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px;
+    gap: 10px;
+    text-align: center;
+}
+
+.ma-empty-icon {
+    color: #d1d5db;
+}
+
+.ma-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+
+.ma-empty-sub {
+    font-size: 13px;
+    color: #9ca3af;
+    margin: 0;
+}

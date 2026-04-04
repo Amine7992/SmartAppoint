@@ -1,0 +1,141 @@
+.notif-count {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin: 2px 0 0;
+}
+
+.notif-mark-all {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.notif-mark-all:hover {
+    border-color: #042C53;
+    color: #042C53;
+}
+
+
+/* ===== LIST ===== */
+
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notif-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+}
+
+.notif-card.unread {
+    background: #f7f9fc;
+    border-color: #dbeafe;
+}
+
+.notif-card.unread:hover {
+    background: #eef3fb;
+}
+
+.notif-card.read {
+    cursor: default;
+}
+
+.notif-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notif-blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.notif-orange {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.notif-gray {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.notif-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-message {
+    font-size: 13.5px;
+    color: #1a1a2e;
+    margin: 0 0 4px;
+    line-height: 1.4;
+}
+
+.notif-time {
+    font-size: 11.5px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+.notif-dot-unread {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #042C53;
+    flex-shrink: 0;
+}
+
+
+/* ===== EMPTY ===== */
+
+.notif-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px;
+    gap: 10px;
+    text-align: center;
+}
+
+.notif-empty-icon {
+    color: #d1d5db;
+}
+
+.notif-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+
+.notif-empty-sub {
+    font-size: 13px;
+    color: #9ca3af;
+    margin: 0;
+    max-width: 260px;
+    line-height: 1.5;
+}

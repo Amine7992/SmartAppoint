@@ -1,14 +1,17 @@
 import { Navigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-
-const PrivateRoute = ({ children, allowedRoles }) => {
+const PrivateRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="text-center mt-5">Chargement...</div>;
+  if (loading) {
+    return <div className="text-center mt-5">Chargement...</div>;
+  }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (roles && !roles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

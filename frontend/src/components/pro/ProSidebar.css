@@ -1,0 +1,140 @@
+.pro-sidebar {
+    width: 210px;
+    min-height: 100vh;
+    background: #085041;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+}
+
+.pro-sidebar-brand {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 8px;
+}
+
+.pro-brand-name {
+    display: block;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.pro-brand-sub {
+    display: block;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.pro-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 10px;
+}
+
+.pro-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 400;
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+}
+
+.pro-nav-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.pro-nav-item.active {
+    background: rgba(255, 255, 255, 0.13);
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.pro-sidebar-section-label {
+    padding: 16px 22px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 1px;
+}
+
+.pro-sidebar-footer {
+    margin-top: auto;
+    padding: 16px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pro-sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.pro-user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #0f6e56;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pro-user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pro-user-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pro-user-role {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+}
+
+.pro-logout-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+}
+
+.pro-logout-btn:hover {
+    color: #ff6b6b;
+}

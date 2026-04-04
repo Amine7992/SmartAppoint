@@ -1,0 +1,174 @@
+.risk-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.risk-summary-card {
+    border-radius: 12px;
+    padding: 20px 24px;
+    border: 1px solid transparent;
+}
+
+.high-card {
+    background: #fff5f5;
+    border-color: #fecaca;
+}
+
+.medium-card {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.low-card {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.risk-summary-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0 0 6px;
+}
+
+.risk-summary-val {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 3px;
+    line-height: 1;
+}
+
+.risk-summary-sub {
+    font-size: 11.5px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+
+/* ===== TABLE ===== */
+
+.risk-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.risk-table th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e9ecef;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-table td {
+    padding: 12px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+    color: #374151;
+}
+
+.risk-table tr:last-child td {
+    border-bottom: none;
+}
+
+.risk-table tr:hover td {
+    background: #f9fafb;
+}
+
+.risk-client-name {
+    font-weight: 600;
+    color: #1a1a2e;
+}
+
+.risk-date {
+    color: #6b7280;
+}
+
+.risk-service {
+    color: #6b7280;
+}
+
+
+/* ===== RISK BAR ===== */
+
+.risk-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+}
+
+.risk-bar-track {
+    flex: 1;
+    height: 7px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.risk-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s;
+}
+
+.risk-bar-fill.high {
+    background: #ef4444;
+}
+
+.risk-bar-fill.medium {
+    background: #f59e0b;
+}
+
+.risk-bar-fill.low {
+    background: #10b981;
+}
+
+.risk-pct {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 32px;
+}
+
+.risk-pct.high {
+    color: #991b1b;
+}
+
+.risk-pct.medium {
+    color: #92400e;
+}
+
+.risk-pct.low {
+    color: #065f46;
+}
+
+
+/* ===== LEVEL BADGE ===== */
+
+.risk-level-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.risk-level-badge.high {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.risk-level-badge.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.risk-level-badge.low {
+    background: #d1fae5;
+    color: #065f46;
+}
