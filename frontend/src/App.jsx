@@ -28,7 +28,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ToastContainer position="top-right" autoClose={false} pauseOnHover />
 
         <Routes>
           {/* Redirection par défaut */}
