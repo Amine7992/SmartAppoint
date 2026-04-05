@@ -19,6 +19,7 @@ const ProDashboard = () => {
 
   const [stats, setStats] = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
   const [todayAppts, setTodayAppts] = useState([]);
+  const [allAppts, setAllAppts] = useState([]); 
   const [calendarDays, setCalendarDays] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,12 +27,14 @@ const ProDashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [statsRes, apptRes] = await Promise.all([
+        const [statsRes, apptRes, allRes] = await Promise.all([
           api.get('/pro/stats'),
           api.get('/pro/appointments/today'),
+          api.get('/pro/appointments'), 
         ]);
         setStats(statsRes.data || {});
         setTodayAppts(apptRes.data || []);
+        setAllAppts(allRes.data || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -40,19 +43,35 @@ const ProDashboard = () => {
     };
     fetchData();
 
-    // Build calendar for current month
+    // Construction du calendrier pour le mois actuel
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    // Adjust: week starts Monday
+    
+    // Ajustement : la semaine commence le lundi
     const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
     const days = [];
     for (let i = 0; i < startOffset; i++) days.push(null);
     for (let d = 1; d <= daysInMonth; d++) days.push(d);
     setCalendarDays(days);
   }, []);
+
+  // Logique de coloration : Si 1+ RDV -> Jaune (busy), Sinon -> Vert (available)
+  const getDayStatusDot = (day) => {
+    if (!day) return null;
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    const dayAppts = allAppts.filter(a => a.date === dateStr);
+
+    if (dayAppts.length > 0) {
+      return <span className="legend-dot busy" />; 
+    }
+    return <span className="legend-dot available" />;
+  };
 
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -99,7 +118,7 @@ const ProDashboard = () => {
           <div className="pro-stat-card">
             <p className="pro-stat-label">RDV aujourd'hui</p>
             <p className="pro-stat-value">{stats.today ?? 0}</p>
-            <p className="pro-stat-sub muted">3 restants</p>
+            <p className="pro-stat-sub muted">En temps réel</p>
           </div>
           <div className="pro-stat-card">
             <p className="pro-stat-label">Ce mois-ci</p>
@@ -109,7 +128,7 @@ const ProDashboard = () => {
           <div className="pro-stat-card">
             <p className="pro-stat-label">Taux d'absence</p>
             <p className="pro-stat-value">{stats.absence_rate ? `${stats.absence_rate}%` : '0%'}</p>
-            <p className="pro-stat-sub orange">Risque moyen</p>
+            <p className="pro-stat-sub orange">Analyse IA</p>
           </div>
           <div className="pro-stat-card">
             <p className="pro-stat-label">Note moyenne</p>
@@ -121,7 +140,7 @@ const ProDashboard = () => {
         {/* Calendar + Timeline */}
         <section className="pro-two-col">
 
-          {/* Calendrier */}
+          {/* Calendrier dynamique */}
           <div className="pro-panel">
             <div className="pro-panel-header">
               <h2 className="pro-panel-title">Planning — {currentMonth} {currentYear}</h2>
@@ -142,7 +161,8 @@ const ProDashboard = () => {
                   const isToday = day === todayDate;
                   return (
                     <div key={day} className={`pro-cal-cell ${isToday ? 'today' : ''}`}>
-                      {day}
+                      <span className="day-number">{day}</span>
+                      {getDayStatusDot(day)}
                     </div>
                   );
                 })}
@@ -156,7 +176,7 @@ const ProDashboard = () => {
             </div>
           </div>
 
-          {/* Timeline du jour */}
+          {/* Timeline */}
           <div className="pro-panel">
             <div className="pro-panel-header">
               <h2 className="pro-panel-title">Aujourd'hui</h2>
@@ -184,7 +204,7 @@ const ProDashboard = () => {
                           )}
                         </div>
                         <span className="pro-timeline-service">
-                          {appt.service} · {appt.duration} min
+                          {appt.service} · {appt.duration || 30} min
                         </span>
                       </div>
                     </div>
@@ -196,7 +216,7 @@ const ProDashboard = () => {
 
         </section>
 
-        {/* Bar chart placeholder */}
+        {/* Graphique */}
         <section className="pro-panel pro-chart-panel">
           <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>
             RDV par semaine — {currentMonth} {currentYear}

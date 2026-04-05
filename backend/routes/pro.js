@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
-const { mapService, mapAppointment, mapProfessional } = require('./helpers');
+const { mapService, mapAppointment } = require('./helpers');
 
 router.use(auth);
 
@@ -28,13 +27,14 @@ const fetchClientsByIds = async (ids) => {
   return data;
 };
 
+// --- ROUTE CORRIGÉE POUR LE PLANNING ET LE CALENDRIER ---
 router.get('/appointments', requireProfessional, async (req, res) => {
   try {
     const { data: appts, error } = await supabase
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .order('created_at', { ascending: false });
+      .order('date_heure', { ascending: true }); // Tri par heure de RDV et non création
 
     if (error) throw error;
 
@@ -47,15 +47,25 @@ router.get('/appointments', requireProfessional, async (req, res) => {
     const servicesById = Object.fromEntries((services || []).map((svc) => [svc.id, svc]));
     const clientsById = Object.fromEntries((clients || []).map((cli) => [cli.id, cli]));
 
-    res.json((appts || []).map((appt) =>
-      mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id])
-    ));
+    // On formate les données pour que le Front-end trouve "date" et "time"
+    const formatted = (appts || []).map((appt) => {
+      const dt = new Date(appt.date_heure);
+      return {
+        ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
+        // IMPORTANT : Ces clés permettent au planning de placer le RDV au bon endroit
+        date: appt.date_heure.split('T')[0], 
+        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':')
+      };
+    });
+
+    res.json(formatted);
   } catch (err) {
     console.error('GET /pro/appointments error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les rendez-vous professionnels' });
+    res.status(500).json({ error: 'Impossible de récupérer les rendez-vous' });
   }
 });
 
+// --- ROUTE CORRIGÉE POUR "AUJOURD'HUI" ---
 router.get('/appointments/today', requireProfessional, async (req, res) => {
   try {
     const today = new Date();
@@ -66,9 +76,9 @@ router.get('/appointments/today', requireProfessional, async (req, res) => {
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .gte('created_at', start)
-      .lt('created_at', end)
-      .order('created_at', { ascending: false });
+      .gte('date_heure', start) // Filtrer par l'heure du RDV
+      .lt('date_heure', end)
+      .order('date_heure', { ascending: true });
 
     if (error) throw error;
 
@@ -80,9 +90,14 @@ router.get('/appointments/today', requireProfessional, async (req, res) => {
     const servicesById = Object.fromEntries((services || []).map((svc) => [svc.id, svc]));
     const clientsById = Object.fromEntries((clients || []).map((cli) => [cli.id, cli]));
 
-    res.json((appts || []).map((appt) =>
-      mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id])
-    ));
+    res.json((appts || []).map((appt) => {
+      const dt = new Date(appt.date_heure);
+      return {
+        ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
+        date: appt.date_heure.split('T')[0],
+        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':')
+      };
+    }));
   } catch (err) {
     console.error('GET /pro/appointments/today error', err);
     res.status(500).json({ error: 'Impossible de récupérer les rendez-vous d’aujourd’hui' });
@@ -95,7 +110,7 @@ router.get('/appointments/risks', requireProfessional, async (req, res) => {
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .order('created_at', { ascending: false });
+      .order('date_heure', { ascending: false });
 
     if (error) throw error;
 
@@ -134,7 +149,7 @@ router.get('/clients', requireProfessional, async (req, res) => {
       historyByClient[appt.client_id] = historyByClient[appt.client_id] || [];
       historyByClient[appt.client_id].push({
         id: appt.id,
-        date: new Date(appt.created_at).toISOString().split('T')[0],
+        date: new Date(appt.date_heure).toISOString().split('T')[0],
         service: appt.service_id || '',
         status: appt.status || 'pending',
       });
@@ -254,11 +269,13 @@ router.get('/stats', requireProfessional, async (req, res) => {
 
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+    
+    // Stats basées sur l'heure du RDV
     const { data: currentMonthAppts, error: monthError } = await supabase
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .gte('created_at', monthStart);
+      .gte('date_heure', monthStart);
     if (monthError) throw monthError;
 
     const cancelled = (appts || []).filter((a) => a.status === 'cancelled').length;
@@ -269,7 +286,7 @@ router.get('/stats', requireProfessional, async (req, res) => {
 
     res.json({
       today: (currentMonthAppts || []).filter((a) => {
-        const d = new Date(a.created_at);
+        const d = new Date(a.date_heure);
         return d.toDateString() === today.toDateString();
       }).length,
       month: (currentMonthAppts || []).length,
@@ -297,7 +314,7 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
     const total = (appts || []).length;
     const months = {};
     (appts || []).forEach((appt) => {
-      const d = new Date(appt.created_at);
+      const d = new Date(appt.date_heure);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       months[monthKey] = (months[monthKey] || 0) + 1;
     });

@@ -4,7 +4,7 @@ const supabase = require('../config/supabase');
 
 // --- INSCRIPTION (REGISTER) ---
 router.post('/register', async (req, res) => {
-  const { name, email, password, role, phone } = req.body;
+  const { name,prenom, email, password, role, phone } = req.body;
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
   console.log('Register request:', { email, role, phone, ip: clientIp });
 
@@ -21,6 +21,7 @@ router.post('/register', async (req, res) => {
       .insert([{
         id: authData.user.id,
         nom: name,
+        prenom:prenom,
         email: email,
         phone: phone,
         role: role,

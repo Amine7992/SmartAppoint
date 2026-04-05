@@ -48,9 +48,15 @@ const Register = () => {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label className="form-label fw-semibold">Nom complet</label>
+            <label className="form-label fw-semibold">Nom</label>
             <input type="text" name="name" className="form-control"
               placeholder="Votre nom" value={form.name}
+              onChange={handleChange} required />
+          </div>
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Prénom</label>
+            <input type="text" name="prenom" className="form-control"
+              placeholder="Votre prénom" value={form.prenom}
               onChange={handleChange} required />
           </div>
           <div className="mb-3">

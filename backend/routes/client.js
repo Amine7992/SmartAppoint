@@ -72,22 +72,32 @@ router.get('/appointments', async (req, res) => {
   }
 });
 
+// --- SECTION CORRIGÉE ---
 router.post('/appointments', async (req, res) => {
   try {
-    const { professional_id, service_id } = req.body;
-    if (!professional_id || !service_id) {
-      return res.status(400).json({ error: 'Identifiants professionnel/service requis' });
+    const { professional_id, service_id, date, time } = req.body;
+    
+    if (!professional_id || !service_id || !date || !time) {
+      return res.status(400).json({ error: 'Données de rendez-vous incomplètes' });
     }
+
+    // Fusion de la date et de l'heure pour la colonne date_heure de type timestamptz
+    const dateHeureSaisie = new Date(`${date}T${time}:00`).toISOString();
 
     const payload = {
       client_id: req.user.id,
       professional_id,
       service_id,
+      date_heure: dateHeureSaisie, // Correspond au nom exact dans ta table
       status: 'pending',
     };
 
     const { data, error } = await supabase.from('Appointment').insert([payload]).select().single();
-    if (error) throw error;
+    
+    if (error) {
+      console.error("Erreur Supabase détaillée:", error);
+      throw error;
+    }
 
     res.status(201).json({ message: 'Rendez-vous créé', appointment: data });
   } catch (err) {
@@ -95,6 +105,7 @@ router.post('/appointments', async (req, res) => {
     res.status(500).json({ error: 'Impossible de créer le rendez-vous' });
   }
 });
+// ------------------------
 
 router.put('/appointments/:id', async (req, res) => {
   try {
