@@ -1,12 +1,11 @@
 const toLocalDateTime = (timestamp) => {
   if (!timestamp) return { date: '', time: '' };
   const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
+  const year    = date.getFullYear();
+  const month   = String(date.getMonth() + 1).padStart(2, '0');
+  const day     = String(date.getDate()).padStart(2, '0');
+  const hours   = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-
   return {
     date: `${year}-${month}-${day}`,
     time: `${hours}:${minutes}`,
@@ -14,47 +13,52 @@ const toLocalDateTime = (timestamp) => {
 };
 
 const mapProfessional = (pro) => ({
-  id: pro.id,
-  name: pro.nom || '',
-  specialty: pro.specialite || '',
-  city: pro.city || '',
-  rating: pro.rating || 0,
+  id:          pro.id,
+  name:        pro.nom        || '',
+  specialty:   pro.specialite || '',
+  city:        pro.city       || '',
+  rating:      pro.rating     || 0,
   description: pro.description || '',
 });
 
 const mapService = (svc) => ({
-  id: svc.id,
-  name: svc.nom || '',
-  description: svc.description || '',
-  price: svc.prix || 0,
-  duration: svc.duree_minutes ?? svc.duration ?? 30,
+  id:              svc.id,
+  name:            svc.nom         || '',
+  description:     svc.description || '',
+  price:           svc.prix        || 0,
+  duration:        svc.duree_minutes ?? svc.duration ?? 30,
   professional_id: svc.professional_id,
 });
 
 const mapAppointment = (appt, service, pro, client) => {
-  const { date, time } = toLocalDateTime(appt.created_at);
+  // ✅ CORRIGÉ — utilise date_heure (heure réelle du RDV) et non created_at
+  const { date, time } = toLocalDateTime(appt.date_heure);
   return {
-    id: appt.id,
-    client_id: appt.client_id,
-    professional_id: appt.professional_id,
-    service_id: appt.service_id,
-    status: appt.status || 'pending',
+    id:               appt.id,
+    client_id:        appt.client_id,
+    professional_id:  appt.professional_id,
+    service_id:       appt.service_id,
+    status:           appt.status || 'pending',
     date,
     time,
-    duration: (service?.duration ?? 30),
-    service: service?.nom || '',
-    professional_name: pro?.nom || '',
-    client_name: client?.nom || '',
-    created_at: appt.created_at,
+    duration:         service?.duree_minutes ?? service?.duration ?? 30,
+    service:          service?.nom            || '',
+    professional_name: pro?.nom               || '',
+    client_name:      client?.nom             || '',
+    created_at:       appt.created_at,
+    // ✅ AJOUTÉ — champs rating nécessaires pour le bouton "Noter"
+    rating:           appt.rating  ?? null,
+    comment:          appt.comment ?? null,
+    rated:            appt.rating  != null,   // true si déjà noté
   };
 };
 
 const mapNotification = (notif) => ({
-  id: notif.id,
-  message: notif.message,
-  type: 'appointment',
+  id:         notif.id,
+  message:    notif.message,
+  type:       'appointment',
   created_at: notif.created_at,
-  read: notif.is_read || false,
+  read:       notif.is_read || false,
 });
 
 module.exports = {
