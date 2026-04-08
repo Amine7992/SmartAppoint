@@ -18,6 +18,10 @@ const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 export const getAvatarSrc = (user) => {
   const avatarUrl = user?.avatar_url || '';
   if (!avatarUrl) return '';
+  if (/^https?:\/\/localhost(?::\d+)?\//i.test(avatarUrl)) {
+    const normalizedPath = avatarUrl.replace(/^https?:\/\/localhost(?::\d+)?/i, '');
+    return `${API_ORIGIN}${normalizedPath}`;
+  }
   if (/^https?:\/\//i.test(avatarUrl)) return avatarUrl;
   if (avatarUrl.startsWith('/')) return `${API_ORIGIN}${avatarUrl}`;
   if (avatarUrl.startsWith('uploads/')) return `${API_ORIGIN}/${avatarUrl}`;

@@ -50,8 +50,7 @@ const saveAvatarLocally = ({ userId, extension, fileBuffer, req }) => {
   const filename = `profile.${extension}`;
   const absolutePath = path.join(userDir, filename);
   fs.writeFileSync(absolutePath, fileBuffer);
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  return `${baseUrl}/uploads/avatars/${userId}/${filename}`;
+  return `/uploads/avatars/${userId}/${filename}`;
 };
 
 const removeLocalAvatar = (avatarUrl) => {
