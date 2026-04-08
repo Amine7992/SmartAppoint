@@ -1,0 +1,7 @@
+{
+  "platform_name": "SmartAppoint",
+  "contact_email": "",
+  "noshow_threshold": 10,
+  "ai_enabled": true,
+  "registration_open": true
+}
