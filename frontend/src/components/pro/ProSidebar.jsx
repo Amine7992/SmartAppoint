@@ -58,8 +58,8 @@ const ProSidebar = () => {
         <div className="pro-sidebar-user">
           <div className="pro-user-avatar">{initials}</div>
           <div className="pro-user-info">
-            <span className="pro-user-name">{user?.name || 'Dr. Karim M.'}</span>
-            <span className="pro-user-role">{user?.specialty || 'Médecin'}</span>
+            <span className="pro-user-name">{user?.name }</span>
+            <span className="pro-user-role">{user?.specialty }</span>
           </div>
         </div>
         <button className="pro-logout-btn" onClick={handleLogout} title="Déconnexion">
