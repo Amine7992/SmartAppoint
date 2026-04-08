@@ -4,6 +4,7 @@ const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { mapService } = require('./helpers');
 
+
 router.use(auth);
 
 const requireProfessional = (req, res, next) => {
