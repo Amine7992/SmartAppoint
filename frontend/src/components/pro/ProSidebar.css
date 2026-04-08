@@ -17,6 +17,16 @@
     margin-bottom: 8px;
 }
 
+
+/* ===== LOGO ===== */
+
+.pro-sidebar-logo {
+    width: 140px;
+    height: auto;
+    display: block;
+    margin-bottom: 4px;
+}
+
 .pro-brand-name {
     display: block;
     color: #ffffff;
