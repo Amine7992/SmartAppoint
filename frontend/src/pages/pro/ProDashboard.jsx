@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Users, AlertTriangle } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
@@ -17,12 +17,11 @@ const ProDashboard = () => {
   const { user } = useAuth();
   const navigate  = useNavigate();
 
-
-  const [stats, setStats] = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
+  const [stats, setStats]           = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
   const [todayAppts, setTodayAppts] = useState([]);
-  const [allAppts, setAllAppts] = useState([]); 
+  const [allAppts, setAllAppts]     = useState([]);
   const [calendarDays, setCalendarDays] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,7 +30,7 @@ const ProDashboard = () => {
         const [statsRes, apptRes, allRes] = await Promise.all([
           api.get('/pro/stats'),
           api.get('/pro/appointments/today'),
-          api.get('/pro/appointments'), 
+          api.get('/pro/appointments'),
         ]);
         setStats(statsRes.data || null);
         setTodayAppts(apptRes.data || []);
@@ -44,16 +43,15 @@ const ProDashboard = () => {
     };
     fetchData();
 
-
     // Construction du calendrier pour le mois actuel
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
+    const now         = new Date();
+    const year        = now.getFullYear();
+    const month       = now.getMonth();
+    const firstDay    = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     // Ajustement : la semaine commence le lundi
-    const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
     const days = [];
     for (let i = 0; i < startOffset; i++) days.push(null);
     for (let d = 1; d <= daysInMonth; d++) days.push(d);
@@ -63,66 +61,63 @@ const ProDashboard = () => {
   // Logique de coloration : Si 1+ RDV -> Jaune (busy), Sinon -> Vert (available)
   const getDayStatusDot = (day) => {
     if (!day) return null;
-
-    const now = new Date();
+    const now     = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    
     const dayAppts = allAppts.filter(a => a.date === dateStr);
-
-    if (dayAppts.length > 0) {
-      return <span className="legend-dot busy" />; 
-    }
+    if (dayAppts.length > 0) return <span className="legend-dot busy" />;
     return <span className="legend-dot available" />;
   };
 
-  const today = new Date().toLocaleDateString('fr-FR', {
+  // ── Variables de date (déclarées une seule fois) ──────────────────────────
+  const today          = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
   const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
-  const todayDate = new Date().getDate();
->>>>>>> origin/backend-supabase
+  const todayDate        = new Date().getDate();
+  const MONTHS_FR        = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const currentMonth     = MONTHS_FR[new Date().getMonth()];
+  const currentYear      = new Date().getFullYear();
+  // ─────────────────────────────────────────────────────────────────────────
 
   const todayRemaining = () => {
-    // RDV restants = ceux qui n'ont pas encore eu lieu aujourd'hui
     const now  = new Date();
     const nowH = now.getHours() * 60 + now.getMinutes();
-    const remaining = todayAppts.filter(a => {
+    return todayAppts.filter(a => {
       if (!a.time) return false;
       const [h, m] = a.time.split(':').map(Number);
       return (h * 60 + m) > nowH && a.status !== 'cancelled';
     }).length;
-    return remaining;
   };
 
   const monthlyGrowthLabel = () => {
     const pct = stats?.monthly_growth_pct;
-    if (pct == null) return null;
-    if (pct > 0)  return `+${pct}% vs mois passé`;
-    if (pct === 0) return 'Stable vs mois passé';
+    if (pct == null)  return null;
+    if (pct > 0)      return `+${pct}% vs mois passé`;
+    if (pct === 0)    return 'Stable vs mois passé';
     return `${pct}% vs mois passé`;
   };
 
   const monthlyGrowthClass = () => {
     const pct = stats?.monthly_growth_pct;
     if (pct == null) return 'muted';
-    if (pct > 0) return 'green';
-    if (pct < 0) return 'red';
+    if (pct > 0)     return 'green';
+    if (pct < 0)     return 'red';
     return 'muted';
   };
 
   const absenceRiskLabel = () => {
     const rate = stats?.absence_rate;
-    if (rate == null) return null;
-    if (rate >= 20) return 'Risque élevé';
-    if (rate >= 10) return 'Risque moyen';
+    if (rate == null)  return null;
+    if (rate >= 20)    return 'Risque élevé';
+    if (rate >= 10)    return 'Risque moyen';
     return 'Risque faible';
   };
 
   const absenceRiskClass = () => {
     const rate = stats?.absence_rate;
     if (rate == null) return 'muted';
-    if (rate >= 20) return 'red';
-    if (rate >= 10) return 'orange';
+    if (rate >= 20)   return 'red';
+    if (rate >= 10)   return 'orange';
     return 'green';
   };
 
@@ -133,7 +128,7 @@ const ProDashboard = () => {
   };
 
   const getRiskClass = (score) => {
-    if (!score) return '';
+    if (!score)       return '';
     if (score >= 0.7) return 'risk-high';
     if (score >= 0.4) return 'risk-medium';
     return 'risk-low';
@@ -143,15 +138,6 @@ const ProDashboard = () => {
     if (!score) return '';
     return `Risque IA ${Math.round(score * 100)}%`;
   };
-
-  const today = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  });
-  const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
-  const todayDate   = new Date().getDate();
-  const MONTHS_FR   = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const currentMonth= MONTHS_FR[new Date().getMonth()];
-  const currentYear = new Date().getFullYear();
 
   return (
     <div className="pro-layout">
@@ -172,41 +158,31 @@ const ProDashboard = () => {
         {/* Stats */}
         <section className="pro-stats-grid">
 
-          {/* RDV aujourd'hui */}
           <div className="pro-stat-card">
             <p className="pro-stat-label">RDV aujourd'hui</p>
-
             <p className="pro-stat-value">{stats.today ?? 0}</p>
             <p className="pro-stat-sub muted">En temps réel</p>
           </div>
 
-          {/* Ce mois-ci */}
           <div className="pro-stat-card">
             <p className="pro-stat-label">Ce mois-ci</p>
             <p className="pro-stat-value">{stats?.month ?? 0}</p>
             {monthlyGrowthLabel() ? (
-              <p className={`pro-stat-sub ${monthlyGrowthClass()}`}>
-                {monthlyGrowthLabel()}
-              </p>
+              <p className={`pro-stat-sub ${monthlyGrowthClass()}`}>{monthlyGrowthLabel()}</p>
             ) : (
               <p className="pro-stat-sub muted">—</p>
             )}
           </div>
 
-          {/* Taux d'absence */}
           <div className="pro-stat-card">
             <p className="pro-stat-label">Taux d'absence</p>
-
             <p className="pro-stat-value">{stats.absence_rate ? `${stats.absence_rate}%` : '0%'}</p>
             <p className="pro-stat-sub orange">Analyse IA</p>
           </div>
 
-          {/* Note moyenne */}
           <div className="pro-stat-card">
             <p className="pro-stat-label">Note moyenne</p>
-            <p className="pro-stat-value">
-              {stats?.rating != null ? stats.rating : '—'}
-            </p>
+            <p className="pro-stat-value">{stats?.rating != null ? stats.rating : '—'}</p>
             {ratingLabel() ? (
               <p className="pro-stat-sub star">{ratingLabel()}</p>
             ) : (
@@ -222,9 +198,7 @@ const ProDashboard = () => {
           {/* Calendrier dynamique */}
           <div className="pro-panel">
             <div className="pro-panel-header">
-              <h2 className="pro-panel-title">
-                Planning — {currentMonth} {currentYear}
-              </h2>
+              <h2 className="pro-panel-title">Planning — {currentMonth} {currentYear}</h2>
               <button className="pro-link-btn" onClick={() => navigate('/pro/planning')}>
                 Vue semaine
               </button>
@@ -240,13 +214,7 @@ const ProDashboard = () => {
                 {calendarDays.map((day, i) => {
                   if (!day) return <div key={`e-${i}`} className="pro-cal-cell empty" />;
                   const isToday = day === todayDate;
-                  // Marque les jours avec des RDV
-                  const hasBusy = todayAppts.some(a => {
-                    if (!a.date) return false;
-                    return new Date(a.date).getDate() === day;
-                  });
                   return (
-
                     <div key={day} className={`pro-cal-cell ${isToday ? 'today' : ''}`}>
                       <span className="day-number">{day}</span>
                       {getDayStatusDot(day)}
@@ -305,7 +273,6 @@ const ProDashboard = () => {
 
         </section>
 
-
         {/* Graphique */}
         <section className="pro-panel pro-chart-panel">
           <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>
@@ -316,7 +283,7 @@ const ProDashboard = () => {
             <p>
               {stats?.month > 0
                 ? 'Graphique disponible dans la page Statistiques.'
-                : 'Les statistiques s\'afficheront ici une fois les données disponibles.'}
+                : "Les statistiques s'afficheront ici une fois les données disponibles."}
             </p>
           </div>
         </section>
