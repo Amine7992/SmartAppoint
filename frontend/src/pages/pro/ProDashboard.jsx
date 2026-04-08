@@ -15,13 +15,13 @@ const EmptyTimeline = () => (
 
 const ProDashboard = () => {
   const { user } = useAuth();
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
 
-  const [stats, setStats]           = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
+  const [stats, setStats] = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
   const [todayAppts, setTodayAppts] = useState([]);
-  const [allAppts, setAllAppts]     = useState([]);
+  const [allAppts, setAllAppts] = useState([]);
   const [calendarDays, setCalendarDays] = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,87 +43,61 @@ const ProDashboard = () => {
     };
     fetchData();
 
-    const now         = new Date();
-    const year        = now.getFullYear();
-    const month       = now.getMonth();
-    const firstDay    = new Date(year, month, 1).getDay();
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const startOffset = firstDay === 0 ? 6 : firstDay - 1;
     const days = [];
-    for (let i = 0; i < startOffset; i++) days.push(null);
-    for (let d = 1; d <= daysInMonth; d++) days.push(d);
+    for (let i = 0; i < startOffset; i += 1) days.push(null);
+    for (let d = 1; d <= daysInMonth; d += 1) days.push(d);
     setCalendarDays(days);
   }, []);
 
   const getDayStatusDot = (day) => {
     if (!day) return null;
-    const now     = new Date();
+    const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const dayAppts = allAppts.filter(a => a.date === dateStr);
+    const dayAppts = allAppts.filter((a) => a.date === dateStr);
     if (dayAppts.length > 0) return <span className="legend-dot busy" />;
     return <span className="legend-dot available" />;
   };
 
-  const today          = new Date().toLocaleDateString('fr-FR', {
+  const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
   const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
-  const todayDate        = new Date().getDate();
-  const MONTHS_FR        = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const currentMonth     = MONTHS_FR[new Date().getMonth()];
-  const currentYear      = new Date().getFullYear();
-
-  const todayRemaining = () => {
-    const now  = new Date();
-    const nowH = now.getHours() * 60 + now.getMinutes();
-    return todayAppts.filter(a => {
-      if (!a.time) return false;
-      const [h, m] = a.time.split(':').map(Number);
-      return (h * 60 + m) > nowH && a.status !== 'cancelled';
-    }).length;
-  };
+  const todayDate = new Date().getDate();
+  const MONTHS_FR = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+  const currentMonth = MONTHS_FR[new Date().getMonth()];
+  const currentYear = new Date().getFullYear();
 
   const monthlyGrowthLabel = () => {
     const pct = stats?.monthly_growth_pct;
-    if (pct == null)  return null;
-    if (pct > 0)      return `+${pct}% vs mois passé`;
-    if (pct === 0)    return 'Stable vs mois passé';
-    return `${pct}% vs mois passé`;
+    if (pct == null) return null;
+    if (pct > 0) return `+${pct}% vs mois passe`;
+    if (pct === 0) return 'Stable vs mois passe';
+    return `${pct}% vs mois passe`;
   };
 
   const monthlyGrowthClass = () => {
     const pct = stats?.monthly_growth_pct;
     if (pct == null) return 'muted';
-    if (pct > 0)     return 'green';
-    if (pct < 0)     return 'red';
+    if (pct > 0) return 'green';
+    if (pct < 0) return 'red';
     return 'muted';
-  };
-
-  const absenceRiskLabel = () => {
-    const rate = stats?.absence_rate;
-    if (rate == null)  return null;
-    if (rate >= 20)    return 'Risque élevé';
-    if (rate >= 10)    return 'Risque moyen';
-    return 'Risque faible';
-  };
-
-  const absenceRiskClass = () => {
-    const rate = stats?.absence_rate;
-    if (rate == null) return 'muted';
-    if (rate >= 20)   return 'red';
-    if (rate >= 10)   return 'orange';
-    return 'green';
   };
 
   const ratingLabel = () => {
     const r = stats?.rating;
     if (r == null) return null;
-    return `* sur 5`;
+    return '* sur 5';
   };
 
   const getRiskClass = (score) => {
-    if (!score)       return '';
+    if (!score) return '';
     if (score >= 0.7) return 'risk-high';
     if (score >= 0.4) return 'risk-medium';
     return 'risk-low';
@@ -143,7 +117,7 @@ const ProDashboard = () => {
           <div className="pro-topbar-right">
             <span className="pro-topbar-date">{todayCapitalized}</span>
             <button className="pro-btn-primary" onClick={() => navigate('/pro/planning')}>
-              Gérer les horaires
+              Gerer les horaires
             </button>
           </div>
         </header>
@@ -152,7 +126,7 @@ const ProDashboard = () => {
           <div className="pro-stat-card">
             <p className="pro-stat-label">RDV aujourd'hui</p>
             <p className="pro-stat-value">{stats.today ?? 0}</p>
-            <p className="pro-stat-sub muted">En temps réel</p>
+            <p className="pro-stat-sub muted">En temps reel</p>
           </div>
 
           <div className="pro-stat-card">
@@ -161,7 +135,7 @@ const ProDashboard = () => {
             {monthlyGrowthLabel() ? (
               <p className={`pro-stat-sub ${monthlyGrowthClass()}`}>{monthlyGrowthLabel()}</p>
             ) : (
-              <p className="pro-stat-sub muted">—</p>
+              <p className="pro-stat-sub muted">-</p>
             )}
           </div>
 
@@ -173,7 +147,7 @@ const ProDashboard = () => {
 
           <div className="pro-stat-card">
             <p className="pro-stat-label">Note moyenne</p>
-            <p className="pro-stat-value">{stats?.rating != null ? stats.rating : '—'}</p>
+            <p className="pro-stat-value">{stats?.rating != null ? stats.rating : '-'}</p>
             {ratingLabel() ? (
               <p className="pro-stat-sub star">{ratingLabel()}</p>
             ) : (
@@ -185,7 +159,7 @@ const ProDashboard = () => {
         <section className="pro-two-col">
           <div className="pro-panel">
             <div className="pro-panel-header">
-              <h2 className="pro-panel-title">Planning — {currentMonth} {currentYear}</h2>
+              <h2 className="pro-panel-title">Planning - {currentMonth} {currentYear}</h2>
               <button className="pro-link-btn" onClick={() => navigate('/pro/planning')}>
                 Vue semaine
               </button>
@@ -193,7 +167,7 @@ const ProDashboard = () => {
 
             <div className="pro-calendar">
               <div className="pro-cal-header">
-                {['Lu','Ma','Me','Je','Ve','Sa','Di'].map(d => (
+                {['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map((d) => (
                   <div key={d} className="pro-cal-dow">{d}</div>
                 ))}
               </div>
@@ -214,7 +188,7 @@ const ProDashboard = () => {
             <div className="pro-cal-legend">
               <span className="legend-item"><span className="legend-dot available" />Disponible</span>
               <span className="legend-item"><span className="legend-dot today-dot" />Aujourd'hui</span>
-              <span className="legend-item"><span className="legend-dot busy" />Chargé</span>
+              <span className="legend-item"><span className="legend-dot busy" />Charge</span>
             </div>
           </div>
 
@@ -222,12 +196,12 @@ const ProDashboard = () => {
             <div className="pro-panel-header">
               <h2 className="pro-panel-title">Aujourd'hui</h2>
               <span className="pro-rdv-count">
-                {loading ? '…' : `${todayAppts.length} RDV`}
+                {loading ? '...' : `${todayAppts.length} RDV`}
               </span>
             </div>
 
             {loading ? (
-              <p className="pro-loading">Chargement…</p>
+              <p className="pro-loading">Chargement...</p>
             ) : todayAppts.length === 0 ? (
               <EmptyTimeline />
             ) : (
@@ -247,7 +221,7 @@ const ProDashboard = () => {
                           )}
                         </div>
                         <span className="pro-timeline-service">
-                          {appt.service} · {appt.duration || 30} min
+                          {appt.service} - {appt.duration || 30} min
                         </span>
                       </div>
                     </div>
@@ -260,14 +234,14 @@ const ProDashboard = () => {
 
         <section className="pro-panel pro-chart-panel">
           <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>
-            RDV par semaine — {currentMonth} {currentYear}
+            RDV par semaine - {currentMonth} {currentYear}
           </h2>
           <div className="pro-chart-empty">
             <BarChartIcon />
             <p>
               {stats?.month > 0
                 ? 'Graphique disponible dans la page Statistiques.'
-                : "Les statistiques s'afficheront ici une fois les données disponibles."}
+                : "Les statistiques s'afficheront ici une fois les donnees disponibles."}
             </p>
           </div>
         </section>
@@ -278,12 +252,11 @@ const ProDashboard = () => {
 
 const BarChartIcon = () => (
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
-    <line x1="18" y1="20" x2="18" y2="10"/>
-    <line x1="12" y1="20" x2="12" y2="4"/>
-    <line x1="6"  y1="20" x2="6"  y2="14"/>
-    <line x1="2"  y1="20" x2="22" y2="20"/>
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+    <line x1="2" y1="20" x2="22" y2="20" />
   </svg>
 );
 
 export default ProDashboard;
-
