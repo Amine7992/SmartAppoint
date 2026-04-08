@@ -17,21 +17,25 @@ const ProDashboard = () => {
   const { user } = useAuth();
   const navigate  = useNavigate();
 
-  const [stats,       setStats]       = useState(null);
-  const [todayAppts,  setTodayAppts]  = useState([]);
-  const [calendarDays,setCalendarDays]= useState([]);
-  const [loading,     setLoading]     = useState(true);
+
+  const [stats, setStats] = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
+  const [todayAppts, setTodayAppts] = useState([]);
+  const [allAppts, setAllAppts] = useState([]); 
+  const [calendarDays, setCalendarDays] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [statsRes, apptRes] = await Promise.all([
+        const [statsRes, apptRes, allRes] = await Promise.all([
           api.get('/pro/stats'),
           api.get('/pro/appointments/today'),
+          api.get('/pro/appointments'), 
         ]);
         setStats(statsRes.data || null);
         setTodayAppts(apptRes.data || []);
+        setAllAppts(allRes.data || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -40,18 +44,43 @@ const ProDashboard = () => {
     };
     fetchData();
 
-    // Calendrier du mois courant
-    const now       = new Date();
-    const firstDay  = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-    const daysCount = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const offset    = firstDay === 0 ? 6 : firstDay - 1;
-    const days      = [];
-    for (let i = 0; i < offset; i++) days.push(null);
-    for (let d = 1; d <= daysCount; d++) days.push(d);
+
+    // Construction du calendrier pour le mois actuel
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Ajustement : la semaine commence le lundi
+    const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+    const days = [];
+    for (let i = 0; i < startOffset; i++) days.push(null);
+    for (let d = 1; d <= daysInMonth; d++) days.push(d);
     setCalendarDays(days);
   }, []);
 
-  // ── Helpers stats dynamiques ─────────────────────────
+  // Logique de coloration : Si 1+ RDV -> Jaune (busy), Sinon -> Vert (available)
+  const getDayStatusDot = (day) => {
+    if (!day) return null;
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    const dayAppts = allAppts.filter(a => a.date === dateStr);
+
+    if (dayAppts.length > 0) {
+      return <span className="legend-dot busy" />; 
+    }
+    return <span className="legend-dot available" />;
+  };
+
+  const today = new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
+  const todayDate = new Date().getDate();
+>>>>>>> origin/backend-supabase
 
   const todayRemaining = () => {
     // RDV restants = ceux qui n'ont pas encore eu lieu aujourd'hui
@@ -146,18 +175,9 @@ const ProDashboard = () => {
           {/* RDV aujourd'hui */}
           <div className="pro-stat-card">
             <p className="pro-stat-label">RDV aujourd'hui</p>
-            <p className="pro-stat-value">{stats?.today ?? 0}</p>
-            {loading ? (
-              <p className="pro-stat-sub muted">—</p>
-            ) : todayAppts.length > 0 ? (
-              <p className="pro-stat-sub muted">
-                {todayRemaining() > 0
-                  ? `${todayRemaining()} restant${todayRemaining() > 1 ? 's' : ''}`
-                  : 'Tous terminés'}
-              </p>
-            ) : (
-              <p className="pro-stat-sub muted">Aucun RDV aujourd'hui</p>
-            )}
+
+            <p className="pro-stat-value">{stats.today ?? 0}</p>
+            <p className="pro-stat-sub muted">En temps réel</p>
           </div>
 
           {/* Ce mois-ci */}
@@ -176,16 +196,9 @@ const ProDashboard = () => {
           {/* Taux d'absence */}
           <div className="pro-stat-card">
             <p className="pro-stat-label">Taux d'absence</p>
-            <p className="pro-stat-value">
-              {stats?.absence_rate != null ? `${stats.absence_rate}%` : '0%'}
-            </p>
-            {absenceRiskLabel() ? (
-              <p className={`pro-stat-sub ${absenceRiskClass()}`}>
-                {absenceRiskLabel()}
-              </p>
-            ) : (
-              <p className="pro-stat-sub muted">—</p>
-            )}
+
+            <p className="pro-stat-value">{stats.absence_rate ? `${stats.absence_rate}%` : '0%'}</p>
+            <p className="pro-stat-sub orange">Analyse IA</p>
           </div>
 
           {/* Note moyenne */}
@@ -206,7 +219,7 @@ const ProDashboard = () => {
         {/* Calendrier + Timeline */}
         <section className="pro-two-col">
 
-          {/* Calendrier */}
+          {/* Calendrier dynamique */}
           <div className="pro-panel">
             <div className="pro-panel-header">
               <h2 className="pro-panel-title">
@@ -233,11 +246,10 @@ const ProDashboard = () => {
                     return new Date(a.date).getDate() === day;
                   });
                   return (
-                    <div
-                      key={day}
-                      className={`pro-cal-cell ${isToday ? 'today' : hasBusy ? 'busy' : ''}`}
-                    >
-                      {day}
+
+                    <div key={day} className={`pro-cal-cell ${isToday ? 'today' : ''}`}>
+                      <span className="day-number">{day}</span>
+                      {getDayStatusDot(day)}
                     </div>
                   );
                 })}
@@ -251,7 +263,7 @@ const ProDashboard = () => {
             </div>
           </div>
 
-          {/* Timeline du jour */}
+          {/* Timeline */}
           <div className="pro-panel">
             <div className="pro-panel-header">
               <h2 className="pro-panel-title">Aujourd'hui</h2>
@@ -281,7 +293,7 @@ const ProDashboard = () => {
                           )}
                         </div>
                         <span className="pro-timeline-service">
-                          {appt.service} · {appt.duration} min
+                          {appt.service} · {appt.duration || 30} min
                         </span>
                       </div>
                     </div>
@@ -293,7 +305,8 @@ const ProDashboard = () => {
 
         </section>
 
-        {/* Graphique placeholder */}
+
+        {/* Graphique */}
         <section className="pro-panel pro-chart-panel">
           <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>
             RDV par semaine — {currentMonth} {currentYear}
