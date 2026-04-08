@@ -43,14 +43,12 @@ const ProDashboard = () => {
     };
     fetchData();
 
-    // Construction du calendrier pour le mois actuel
     const now         = new Date();
     const year        = now.getFullYear();
     const month       = now.getMonth();
     const firstDay    = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Ajustement : la semaine commence le lundi
     const startOffset = firstDay === 0 ? 6 : firstDay - 1;
     const days = [];
     for (let i = 0; i < startOffset; i++) days.push(null);
@@ -58,7 +56,6 @@ const ProDashboard = () => {
     setCalendarDays(days);
   }, []);
 
-  // Logique de coloration : Si 1+ RDV -> Jaune (busy), Sinon -> Vert (available)
   const getDayStatusDot = (day) => {
     if (!day) return null;
     const now     = new Date();
@@ -68,16 +65,14 @@ const ProDashboard = () => {
     return <span className="legend-dot available" />;
   };
 
-  // ── Variables de date (déclarées une seule fois) ──────────────────────────
   const today          = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
   const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
   const todayDate        = new Date().getDate();
-  const MONTHS_FR        = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MONTHS_FR        = ['Janvier','F�vrier','Mars','Avril','Mai','Juin','Juillet','Ao�t','Septembre','Octobre','Novembre','D�cembre'];
   const currentMonth     = MONTHS_FR[new Date().getMonth()];
   const currentYear      = new Date().getFullYear();
-  // ─────────────────────────────────────────────────────────────────────────
 
   const todayRemaining = () => {
     const now  = new Date();
@@ -92,9 +87,9 @@ const ProDashboard = () => {
   const monthlyGrowthLabel = () => {
     const pct = stats?.monthly_growth_pct;
     if (pct == null)  return null;
-    if (pct > 0)      return `+${pct}% vs mois passé`;
-    if (pct === 0)    return 'Stable vs mois passé';
-    return `${pct}% vs mois passé`;
+    if (pct > 0)      return `+${pct}% vs mois pass�`;
+    if (pct === 0)    return 'Stable vs mois pass�';
+    return `${pct}% vs mois pass�`;
   };
 
   const monthlyGrowthClass = () => {
@@ -108,7 +103,7 @@ const ProDashboard = () => {
   const absenceRiskLabel = () => {
     const rate = stats?.absence_rate;
     if (rate == null)  return null;
-    if (rate >= 20)    return 'Risque élevé';
+    if (rate >= 20)    return 'Risque �lev�';
     if (rate >= 10)    return 'Risque moyen';
     return 'Risque faible';
   };
@@ -124,7 +119,7 @@ const ProDashboard = () => {
   const ratingLabel = () => {
     const r = stats?.rating;
     if (r == null) return null;
-    return `★ sur 5`;
+    return `* sur 5`;
   };
 
   const getRiskClass = (score) => {
@@ -143,25 +138,21 @@ const ProDashboard = () => {
     <div className="pro-layout">
       <ProSidebar />
       <main className="pro-main">
-
-        {/* Topbar */}
         <header className="pro-topbar">
           <h1 className="pro-page-title">Tableau de bord</h1>
           <div className="pro-topbar-right">
             <span className="pro-topbar-date">{todayCapitalized}</span>
             <button className="pro-btn-primary" onClick={() => navigate('/pro/planning')}>
-              Gérer les horaires
+              G�rer les horaires
             </button>
           </div>
         </header>
 
-        {/* Stats */}
         <section className="pro-stats-grid">
-
           <div className="pro-stat-card">
             <p className="pro-stat-label">RDV aujourd'hui</p>
             <p className="pro-stat-value">{stats.today ?? 0}</p>
-            <p className="pro-stat-sub muted">En temps réel</p>
+            <p className="pro-stat-sub muted">En temps r�el</p>
           </div>
 
           <div className="pro-stat-card">
@@ -170,7 +161,7 @@ const ProDashboard = () => {
             {monthlyGrowthLabel() ? (
               <p className={`pro-stat-sub ${monthlyGrowthClass()}`}>{monthlyGrowthLabel()}</p>
             ) : (
-              <p className="pro-stat-sub muted">—</p>
+              <p className="pro-stat-sub muted">�</p>
             )}
           </div>
 
@@ -182,23 +173,19 @@ const ProDashboard = () => {
 
           <div className="pro-stat-card">
             <p className="pro-stat-label">Note moyenne</p>
-            <p className="pro-stat-value">{stats?.rating != null ? stats.rating : '—'}</p>
+            <p className="pro-stat-value">{stats?.rating != null ? stats.rating : '�'}</p>
             {ratingLabel() ? (
               <p className="pro-stat-sub star">{ratingLabel()}</p>
             ) : (
               <p className="pro-stat-sub muted">Pas encore de note</p>
             )}
           </div>
-
         </section>
 
-        {/* Calendrier + Timeline */}
         <section className="pro-two-col">
-
-          {/* Calendrier dynamique */}
           <div className="pro-panel">
             <div className="pro-panel-header">
-              <h2 className="pro-panel-title">Planning — {currentMonth} {currentYear}</h2>
+              <h2 className="pro-panel-title">Planning � {currentMonth} {currentYear}</h2>
               <button className="pro-link-btn" onClick={() => navigate('/pro/planning')}>
                 Vue semaine
               </button>
@@ -227,21 +214,20 @@ const ProDashboard = () => {
             <div className="pro-cal-legend">
               <span className="legend-item"><span className="legend-dot available" />Disponible</span>
               <span className="legend-item"><span className="legend-dot today-dot" />Aujourd'hui</span>
-              <span className="legend-item"><span className="legend-dot busy" />Chargé</span>
+              <span className="legend-item"><span className="legend-dot busy" />Charg�</span>
             </div>
           </div>
 
-          {/* Timeline */}
           <div className="pro-panel">
             <div className="pro-panel-header">
               <h2 className="pro-panel-title">Aujourd'hui</h2>
               <span className="pro-rdv-count">
-                {loading ? '…' : `${todayAppts.length} RDV`}
+                {loading ? '�' : `${todayAppts.length} RDV`}
               </span>
             </div>
 
             {loading ? (
-              <p className="pro-loading">Chargement…</p>
+              <p className="pro-loading">Chargement�</p>
             ) : todayAppts.length === 0 ? (
               <EmptyTimeline />
             ) : (
@@ -261,7 +247,7 @@ const ProDashboard = () => {
                           )}
                         </div>
                         <span className="pro-timeline-service">
-                          {appt.service} · {appt.duration || 30} min
+                          {appt.service} � {appt.duration || 30} min
                         </span>
                       </div>
                     </div>
@@ -270,24 +256,21 @@ const ProDashboard = () => {
               </div>
             )}
           </div>
-
         </section>
 
-        {/* Graphique */}
         <section className="pro-panel pro-chart-panel">
           <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>
-            RDV par semaine — {currentMonth} {currentYear}
+            RDV par semaine � {currentMonth} {currentYear}
           </h2>
           <div className="pro-chart-empty">
             <BarChartIcon />
             <p>
               {stats?.month > 0
                 ? 'Graphique disponible dans la page Statistiques.'
-                : "Les statistiques s'afficheront ici une fois les données disponibles."}
+                : "Les statistiques s'afficheront ici une fois les donn�es disponibles."}
             </p>
           </div>
         </section>
-
       </main>
     </div>
   );
@@ -303,3 +286,4 @@ const BarChartIcon = () => (
 );
 
 export default ProDashboard;
+

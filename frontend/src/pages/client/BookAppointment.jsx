@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronRight, ChevronLeft, Check, MapPin, Star, Clock } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
+import UserAvatar from '../../components/common/UserAvatar';
 import api from '../../api/axios';
 import './BookAppointment.css';
 
@@ -79,9 +80,7 @@ const Step1 = ({ onSelect }) => {
         <div className="pros-grid">
           {filtered.map(pro => (
             <div key={pro.id} className="pro-card" onClick={() => onSelect(pro)}>
-              <div className="pro-card-avatar" style={{ background: '#1a5276' }}>
-                {pro.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-              </div>
+              <UserAvatar user={pro} fallback="PR" className="pro-card-avatar" style={{ background: '#1a5276' }} />
               <div className="pro-card-info">
                 <p className="pro-card-name">{pro.name}</p>
                 <p className="pro-card-specialty">{pro.specialty}</p>
@@ -90,11 +89,10 @@ const Step1 = ({ onSelect }) => {
                     <MapPin size={11} /> {pro.city}
                   </p>
                 )}
-                {pro.rating && (
-                  <p className="pro-card-rating">
-                    <Star size={11} fill="#f0a500" color="#f0a500" /> {pro.rating}
-                  </p>
-                )}
+                <p className="pro-card-rating">
+                  <Star size={11} fill={Number(pro.rating) > 0 ? "#f0a500" : "none"} color="#f0a500" />
+                  {Number(pro.rating) > 0 ? ` ${pro.rating}` : ""}
+                </p>
               </div>
               <ChevronRight size={16} className="pro-card-arrow" />
             </div>
@@ -120,9 +118,7 @@ const Step2 = ({ pro, onSelect, onBack }) => {
   return (
     <div className="book-step">
       <div className="book-selected-pro">
-        <div className="pro-mini-avatar" style={{ background: '#1a5276' }}>
-          {pro.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-        </div>
+        <UserAvatar user={pro} fallback="PR" className="pro-mini-avatar" style={{ background: '#1a5276' }} />
         <div>
           <p className="pro-mini-name">{pro.name}</p>
           <p className="pro-mini-spec">{pro.specialty}</p>
@@ -298,3 +294,6 @@ const BookAppointment = () => {
 };
 
 export default BookAppointment;
+
+
+

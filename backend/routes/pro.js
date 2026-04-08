@@ -166,8 +166,11 @@ router.get('/clients', requireProfessional, async (req, res) => {
       return {
         id: client.id,
         name: client.nom || '',
+        nom: client.nom || '',
+        prenom: client.prenom || '',
         email: client.email || '',
         phone: client.phone || '',
+        avatar_url: client.avatar_url || '',
         appointments_count: appointmentsCount,
         no_show_count: noShowCount,
         last_visit: lastVisit,

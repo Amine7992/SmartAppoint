@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Plus, Calendar, User } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
+import UserAvatar from '../../components/common/UserAvatar';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import './Dashboard.css';
@@ -173,9 +174,7 @@ const ClientDashboard = () => {
               <ul className="pros-list">
                 {pros.map((pro) => (
                   <li key={pro.id} className="pro-item">
-                    <div className="pro-avatar" style={{ background: '#1a5276' }}>
-                      {pro.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </div>
+                    <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
                     <div className="pro-info">
                       <p className="pro-name">{pro.name}</p>
                       <p className="pro-meta">{pro.specialty} · {pro.city}</p>

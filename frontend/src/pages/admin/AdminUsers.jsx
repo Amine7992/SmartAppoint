@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, User, Trash2, ShieldOff } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
+import UserAvatar from '../../components/common/UserAvatar';
 import api from '../../api/axios';
 import './AdminUsers.css';
 
@@ -100,9 +101,7 @@ const AdminUsers = () => {
                   <tr key={u.id}>
                     <td>
                       <div className="au-user-cell">
-                        <div className="au-avatar">
-                          {u.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </div>
+                        <UserAvatar user={u} fallback="US" className="au-avatar" />
                         <span className="admin-table-name">{u.name}</span>
                       </div>
                     </td>

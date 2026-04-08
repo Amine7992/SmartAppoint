@@ -24,13 +24,13 @@ const ProStats = () => {
         </header>
 
         {loading ? (
-          <p className="pro-loading">Chargementâ€¦</p>
+          <p className="pro-loading">Chargement…</p>
         ) : !stats ? (
           <div className="pro-panel">
             <div className="pro-empty" style={{ padding: '50px 20px' }}>
               <TrendingUp size={36} className="pro-empty-icon" />
               <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Aucune statistique disponible</p>
-              <p>Les donnÃ©es apparaÃ®tront ici au fur et Ã  mesure de vos rendez-vous.</p>
+              <p>Les données apparaîtront ici au fur et à mesure de vos rendez-vous.</p>
             </div>
           </div>
         ) : (
@@ -39,7 +39,7 @@ const ProStats = () => {
               <div className="pro-stat-card">
                 <p className="pro-stat-label"><Calendar size={13} style={{ marginRight: 4 }} />Total RDV</p>
                 <p className="pro-stat-value">{stats.total_appointments ?? 0}</p>
-                <p className="pro-stat-sub muted">Depuis le dÃ©but</p>
+                <p className="pro-stat-sub muted">Depuis le début</p>
               </div>
               <div className="pro-stat-card">
                 <p className="pro-stat-label"><Users size={13} style={{ marginRight: 4 }} />Clients uniques</p>
@@ -49,12 +49,12 @@ const ProStats = () => {
               <div className="pro-stat-card">
                 <p className="pro-stat-label"><TrendingUp size={13} style={{ marginRight: 4 }} />Taux no-show</p>
                 <p className="pro-stat-value">{stats.noshow_rate ? `${stats.noshow_rate}%` : '0%'}</p>
-                <p className="pro-stat-sub orange">Sur la pÃ©riode</p>
+                <p className="pro-stat-sub orange">Sur la période</p>
               </div>
               <div className="pro-stat-card">
                 <p className="pro-stat-label"><Star size={13} style={{ marginRight: 4 }} />Note moyenne</p>
-                <p className="pro-stat-value">{stats.avg_rating ?? 'â€”'}</p>
-                <p className="pro-stat-sub star">â˜… sur 5</p>
+                <p className="pro-stat-value">{stats.avg_rating ?? '—'}</p>
+                <p className="pro-stat-sub star">* sur 5</p>
               </div>
             </div>
 
@@ -77,12 +77,12 @@ const ProStats = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="pro-empty"><p>Pas encore de donnÃ©es.</p></div>
+                  <div className="pro-empty"><p>Pas encore de données.</p></div>
                 )}
               </div>
 
               <div className="pro-panel">
-                <h2 className="pro-panel-title" style={{ marginBottom: 16 }}>RÃ©partition des services</h2>
+                <h2 className="pro-panel-title" style={{ marginBottom: 16 }}>Répartition des services</h2>
                 {stats.services && stats.services.length > 0 ? (
                   <div className="stats-service-list">
                     {stats.services.map((s, i) => (
@@ -99,7 +99,7 @@ const ProStats = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="pro-empty"><p>Pas encore de donnÃ©es.</p></div>
+                  <div className="pro-empty"><p>Pas encore de données.</p></div>
                 )}
               </div>
             </div>
@@ -111,3 +111,4 @@ const ProStats = () => {
 };
 
 export default ProStats;
+

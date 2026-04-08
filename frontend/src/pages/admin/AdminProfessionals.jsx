@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Search, Briefcase, Check, X, RefreshCw } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
+import UserAvatar from '../../components/common/UserAvatar';
 import api from '../../api/axios';
+import './AdminUsers.css';
 
 const FILTERS = ['Tous', 'En attente', 'Validés', 'Suspendus'];
 
@@ -10,6 +12,11 @@ const AdminProfessionals = () => {
   const [loading, setLoading] = useState(true);
   const [query,   setQuery]   = useState('');
   const [filter,  setFilter]  = useState('Tous');
+  const [message, setMessage] = useState(null);
+
+  const applyProfessionalUpdate = (updatedPro) => {
+    setPros(prev => prev.map(p => p.id === updatedPro.id ? { ...p, ...updatedPro } : p));
+  };
 
   useEffect(() => {
     api.get('/admin/professionals')
@@ -19,21 +26,36 @@ const AdminProfessionals = () => {
   }, []);
 
   const handleValidate   = async (id) => {
-    try { await api.put(`/admin/professionals/${id}/validate`);
-      setPros(prev => prev.map(p => p.id === id ? { ...p, status: 'validated' } : p)); }
-    catch (err) { console.error(err); }
+    try {
+      const { data } = await api.put(`/admin/professionals/${id}/validate`);
+      applyProfessionalUpdate(data);
+      setMessage({ type: 'success', text: 'Professionnel validé.' });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: 'error', text: err?.response?.data?.error || 'La validation a échoué.' });
+    }
   };
 
   const handleReject     = async (id) => {
-    try { await api.put(`/admin/professionals/${id}/reject`);
-      setPros(prev => prev.map(p => p.id === id ? { ...p, status: 'suspended' } : p)); }
-    catch (err) { console.error(err); }
+    try {
+      const { data } = await api.put(`/admin/professionals/${id}/reject`);
+      applyProfessionalUpdate(data);
+      setMessage({ type: 'success', text: 'Professionnel suspendu.' });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: 'error', text: err?.response?.data?.error || 'La suspension a échoué.' });
+    }
   };
 
   const handleReactivate = async (id) => {
-    try { await api.put(`/admin/professionals/${id}/reactivate`);
-      setPros(prev => prev.map(p => p.id === id ? { ...p, status: 'validated' } : p)); }
-    catch (err) { console.error(err); }
+    try {
+      const { data } = await api.put(`/admin/professionals/${id}/reactivate`);
+      applyProfessionalUpdate(data);
+      setMessage({ type: 'success', text: 'Professionnel réactivé.' });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: 'error', text: err?.response?.data?.error || 'La réactivation a échoué.' });
+    }
   };
 
   const statusMap = { 'En attente': ['pending','en attente'], 'Validés': ['validated','valide'], 'Suspendus': ['suspended','suspendu'] };
@@ -57,6 +79,18 @@ const AdminProfessionals = () => {
         </header>
 
         <div className="admin-panel">
+          {message && (
+            <p style={{
+              fontSize: 12.5,
+              padding: '8px 12px',
+              borderRadius: 7,
+              marginBottom: 14,
+              background: message.type === 'success' ? '#d1fae5' : '#fee2e2',
+              color: message.type === 'success' ? '#065f46' : '#991b1b',
+            }}>
+              {message.text}
+            </p>
+          )}
           <div className="au-toolbar">
             <div className="au-search-bar">
               <Search size={15} className="au-search-icon" />
@@ -81,7 +115,12 @@ const AdminProfessionals = () => {
               <tbody>
                 {filtered.map(pro => (
                   <tr key={pro.id}>
-                    <td className="admin-table-name">{pro.name}</td>
+                    <td>
+                      <div className="au-user-cell">
+                        <UserAvatar user={pro} fallback="PR" className="au-avatar" />
+                        <span className="admin-table-name">{pro.name}</span>
+                      </div>
+                    </td>
                     <td className="admin-table-muted">{pro.specialty}</td>
                     <td className="admin-table-muted">{pro.email}</td>
                     <td><span className={`admin-status-badge ${statusCls[pro.status?.toLowerCase()] || 'abadge-pending'}`}>{statusLabel[pro.status?.toLowerCase()] || pro.status}</span></td>

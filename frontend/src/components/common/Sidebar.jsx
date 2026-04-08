@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, Search, User, Bell, LogOut } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
+import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -12,9 +13,8 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'AM';
+  const initials = getUserInitials(user, 'CL');
+  const avatarSrc = getAvatarSrc(user);
 
   return (
     <aside className="sidebar">
@@ -52,7 +52,9 @@ const Sidebar = () => {
 
       <div className="sidebar-footer">
         <div className="sidebar-user">
-          <div className="user-avatar">{initials}</div>
+          <div className="user-avatar">
+            {avatarSrc ? <img src={avatarSrc} alt={user?.name || 'Avatar'} /> : initials}
+          </div>
           <div className="user-info">
             <span className="user-name">{user?.name || 'Ahmed M.'}</span>
             <span className="user-role">Client</span>

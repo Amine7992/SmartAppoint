@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { User, Mail, Phone, Lock, Save } from 'lucide-react';
-import Sidebar from '../../components/common/Sidebar';
+import { User, Mail, Phone, Lock, Save, Briefcase } from 'lucide-react';
+import ProSidebar from '../../components/pro/ProSidebar';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
 import { fileToDataUrl } from '../../utils/file';
-import './Profile.css';
+import '../client/Profile.css';
 
-const Profile = () => {
+const ProProfile = () => {
   const { user, updateUser } = useAuth();
 
   const [form, setForm] = useState({
@@ -15,6 +15,7 @@ const Profile = () => {
     prenom: user?.prenom || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    specialite: user?.specialty || user?.specialite || '',
   });
 
   const [pwdForm, setPwdForm] = useState({
@@ -76,9 +77,9 @@ const Profile = () => {
     try {
       const { data } = await api.put('/users/profile', form);
       updateUser(data);
-      setMsgInfo({ type: 'success', text: 'Profil mis a jour avec succes.' });
+      setMsgInfo({ type: 'success', text: 'Profil professionnel mis a jour.' });
     } catch {
-      setMsgInfo({ type: 'error', text: 'Erreur lors de la mise a jour.' });
+      setMsgInfo({ type: 'error', text: 'Erreur lors de la mise a jour du profil.' });
     } finally {
       setSavingInfo(false);
     }
@@ -100,7 +101,7 @@ const Profile = () => {
         current_password: pwdForm.current,
         new_password: pwdForm.newPwd,
       });
-      setMsgPwd({ type: 'success', text: 'Mot de passe modifie avec succes.' });
+      setMsgPwd({ type: 'success', text: 'Mot de passe mis a jour avec succes.' });
       setPwdForm({ current: '', newPwd: '', confirm: '' });
     } catch {
       setMsgPwd({ type: 'error', text: 'Mot de passe actuel incorrect.' });
@@ -109,12 +110,12 @@ const Profile = () => {
     }
   };
 
-  const initials = getUserInitials(user, 'CL');
+  const initials = getUserInitials(user, 'PR');
   const avatarSrc = getAvatarSrc(user);
 
   return (
     <div className="dashboard-layout">
-      <Sidebar />
+      <ProSidebar />
       <main className="dashboard-main">
         <header className="topbar">
           <h1 className="page-title">Mon profil</h1>
@@ -122,11 +123,11 @@ const Profile = () => {
 
         <div className="profile-grid">
           <div className="profile-avatar-card">
-            <div className="profile-big-avatar">
+            <div className="profile-big-avatar" style={{ background: '#0f766e' }}>
               {avatarSrc ? <img src={avatarSrc} alt={user?.name || 'Avatar'} /> : initials}
             </div>
             <p className="profile-avatar-name">{user?.name || '-'}</p>
-            <p className="profile-avatar-role">Client</p>
+            <p className="profile-avatar-role" style={{ background: '#ccfbf1', color: '#115e59' }}>Professionnel</p>
             <p className="profile-avatar-email">{user?.email || '-'}</p>
             <label className="profile-avatar-upload">
               {uploadingAvatar ? 'Televersement...' : 'Ajouter une photo'}
@@ -139,19 +140,20 @@ const Profile = () => {
             <h2 className="profile-section-title"><User size={16} /> Informations personnelles</h2>
             <div className="profile-field"><label className="profile-label">Nom</label><input className="profile-input" name="nom" value={form.nom} onChange={handleChange} placeholder="Votre nom" /></div>
             <div className="profile-field"><label className="profile-label">Prenom</label><input className="profile-input" name="prenom" value={form.prenom} onChange={handleChange} placeholder="Votre prenom" /></div>
-            <div className="profile-field"><label className="profile-label"><Mail size={13} /> Adresse email</label><input className="profile-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@exemple.com" /></div>
+            <div className="profile-field"><label className="profile-label"><Mail size={13} /> Adresse email</label><input className="profile-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder="pro@smartappoint.com" /></div>
             <div className="profile-field"><label className="profile-label"><Phone size={13} /> Telephone</label><input className="profile-input" name="phone" value={form.phone} onChange={handleChange} placeholder="+216 XX XXX XXX" /></div>
+            <div className="profile-field"><label className="profile-label"><Briefcase size={13} /> Specialite</label><input className="profile-input" name="specialite" value={form.specialite} onChange={handleChange} placeholder="Votre specialite" /></div>
             {msgInfo && <p className={`profile-msg ${msgInfo.type}`}>{msgInfo.text}</p>}
-            <button className="profile-save-btn" onClick={handleSaveInfo} disabled={savingInfo}><Save size={14} />{savingInfo ? 'Enregistrement...' : 'Enregistrer les modifications'}</button>
+            <button className="profile-save-btn" style={{ background: '#0f766e' }} onClick={handleSaveInfo} disabled={savingInfo}><Save size={14} />{savingInfo ? 'Enregistrement...' : 'Enregistrer les modifications'}</button>
           </div>
 
           <div className="profile-section-card">
-            <h2 className="profile-section-title"><Lock size={16} /> Modifier le mot de passe</h2>
+            <h2 className="profile-section-title"><Lock size={16} /> Securite du compte</h2>
             <div className="profile-field"><label className="profile-label">Mot de passe actuel</label><input className="profile-input" name="current" type="password" value={pwdForm.current} onChange={handlePwdChange} placeholder="********" /></div>
             <div className="profile-field"><label className="profile-label">Nouveau mot de passe</label><input className="profile-input" name="newPwd" type="password" value={pwdForm.newPwd} onChange={handlePwdChange} placeholder="********" /></div>
             <div className="profile-field"><label className="profile-label">Confirmer le mot de passe</label><input className="profile-input" name="confirm" type="password" value={pwdForm.confirm} onChange={handlePwdChange} placeholder="********" /></div>
             {msgPwd && <p className={`profile-msg ${msgPwd.type}`}>{msgPwd.text}</p>}
-            <button className="profile-save-btn" onClick={handleSavePwd} disabled={savingPwd}><Save size={14} />{savingPwd ? 'Modification...' : 'Modifier le mot de passe'}</button>
+            <button className="profile-save-btn" style={{ background: '#0f766e' }} onClick={handleSavePwd} disabled={savingPwd}><Save size={14} />{savingPwd ? 'Modification...' : 'Modifier le mot de passe'}</button>
           </div>
         </div>
       </main>
@@ -159,4 +161,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default ProProfile;

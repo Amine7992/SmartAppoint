@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, User } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
+import UserAvatar from '../../components/common/UserAvatar';
 import api from '../../api/axios';
 import './ProClients.css';
 
@@ -58,9 +59,7 @@ const ProClients = () => {
                     className={`client-item ${selected?.id === c.id ? 'active' : ''}`}
                     onClick={() => setSelected(c)}
                   >
-                    <div className="client-avatar">
-                      {c.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </div>
+                    <UserAvatar user={c} fallback="CL" className="client-avatar" style={{ background: '#085041' }} />
                     <div className="client-info">
                       <p className="client-name">{c.name}</p>
                       <p className="client-email">{c.email}</p>
@@ -82,9 +81,7 @@ const ProClients = () => {
             ) : (
               <>
                 <div className="client-detail-header">
-                  <div className="client-detail-avatar">
-                    {selected.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </div>
+                  <UserAvatar user={selected} fallback="CL" className="client-detail-avatar" style={{ background: '#085041' }} />
                   <div>
                     <p className="client-detail-name">{selected.name}</p>
                     <p className="client-detail-email">{selected.email}</p>

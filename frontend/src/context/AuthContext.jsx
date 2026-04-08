@@ -1,7 +1,17 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
 export const AuthContext = createContext();
+
+const normalizeUser = (userData) => {
+  if (!userData) return null;
+
+  return {
+    ...userData,
+    specialty: userData.specialty || userData.specialite || '',
+    name: userData.name || [userData.prenom, userData.nom].filter(Boolean).join(' ').trim() || '',
+  };
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -16,7 +26,7 @@ export const AuthProvider = ({ children }) => {
         const decoded = jwtDecode(savedToken);
         if (decoded.exp * 1000 > Date.now()) {
           setToken(savedToken);
-          setUser(JSON.parse(savedUser));
+          setUser(normalizeUser(JSON.parse(savedUser)));
         } else {
           logout();
         }
@@ -27,11 +37,18 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (token, userData) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setToken(token);
-    setUser(userData);
+  const login = (nextToken, userData) => {
+    const normalizedUser = normalizeUser(userData);
+    localStorage.setItem('token', nextToken);
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
+    setToken(nextToken);
+    setUser(normalizedUser);
+  };
+
+  const updateUser = (userData) => {
+    const normalizedUser = normalizeUser(userData);
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   };
 
   const logout = () => {
@@ -42,7 +59,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

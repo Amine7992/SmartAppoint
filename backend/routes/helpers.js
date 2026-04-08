@@ -15,9 +15,12 @@ const toLocalDateTime = (timestamp) => {
 const mapProfessional = (pro) => ({
   id:          pro.id,
   name:        pro.nom        || '',
+  nom:         pro.nom        || '',
+  prenom:      pro.prenom     || '',
   specialty:   pro.specialite || '',
   city:        pro.city       || '',
   rating:      pro.rating     || 0,
+  avatar_url:  pro.avatar_url || '',
   description: pro.description || '',
 });
 
@@ -44,7 +47,9 @@ const mapAppointment = (appt, service, pro, client) => {
     duration:         service?.duree_minutes ?? service?.duration ?? 30,
     service:          service?.nom            || '',
     professional_name: pro?.nom               || '',
+    professional_avatar_url: pro?.avatar_url  || '',
     client_name:      client?.nom             || '',
+    client_avatar_url: client?.avatar_url     || '',
     created_at:       appt.created_at,
     // ✅ AJOUTÉ — champs rating nécessaires pour le bouton "Noter"
     rating:           appt.rating  ?? null,
