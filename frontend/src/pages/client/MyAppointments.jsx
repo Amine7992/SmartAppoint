@@ -9,11 +9,11 @@ const FILTERS = ['Tous', 'À venir', 'Passés', 'Annulés'];
 /* ── Badge statut ── */
 const StatusBadge = ({ status }) => {
   const map = {
-    confirmed:    { label: 'Confirmé',   cls: 'badge-confirmed' },
-    pending:      { label: 'En attente', cls: 'badge-pending'   },
-    cancelled:    { label: 'Annulé',     cls: 'badge-cancelled' },
-    past:         { label: 'Passé',      cls: 'badge-past'      },
-    no_show:      { label: 'Absent',     cls: 'badge-cancelled' },
+    confirmed: { label: 'Confirmé',   cls: 'badge-confirmed' },
+    pending:   { label: 'En attente', cls: 'badge-pending'   },
+    cancelled: { label: 'Annulé',     cls: 'badge-cancelled' },
+    past:      { label: 'Passé',      cls: 'badge-past'      },
+    no_show:   { label: 'Absent',     cls: 'badge-cancelled' },
   };
   const s = map[status?.toLowerCase()] || { label: status, cls: 'badge-pending' };
   return <span className={`appt-badge ${s.cls}`}>{s.label}</span>;
@@ -59,12 +59,12 @@ const RatingModal = ({ appointment, onClose, onSubmit }) => {
     try {
       await api.post(`/appointments/${appointment.id}/rating`, {
         rating,
-        comment: comment.trim() || null,
+        comment:         comment.trim() || null,
         professional_id: appointment.professional_id,
       });
       onSubmit(appointment.id, rating, comment);
     } catch (err) {
-      setError('Erreur lors de l\'envoi. Veuillez réessayer.');
+      setError("Erreur lors de l'envoi. Veuillez réessayer.");
     } finally {
       setSaving(false);
     }
@@ -93,15 +93,17 @@ const RatingModal = ({ appointment, onClose, onSubmit }) => {
           <StarRating value={rating} onChange={setRating} />
           <p className="modal-rating-hint">
             {rating === 0 ? 'Cliquez pour noter' :
-             rating === 1 ? 'Très insatisfait' :
-             rating === 2 ? 'Insatisfait' :
-             rating === 3 ? 'Correct' :
-             rating === 4 ? 'Satisfait' : 'Très satisfait !'}
+             rating === 1 ? 'Très insatisfait'   :
+             rating === 2 ? 'Insatisfait'         :
+             rating === 3 ? 'Correct'             :
+             rating === 4 ? 'Satisfait'           : 'Très satisfait !'}
           </p>
         </div>
 
         <div className="modal-comment-section">
-          <p className="modal-label">Commentaire <span className="modal-optional">(optionnel)</span></p>
+          <p className="modal-label">
+            Commentaire <span className="modal-optional">(optionnel)</span>
+          </p>
           <textarea
             className="modal-textarea"
             placeholder="Partagez votre expérience…"
@@ -145,10 +147,10 @@ const EmptyState = ({ filter }) => (
 
 /* ══════════════════════════════════════════════════════════ */
 const MyAppointments = () => {
-  const [appointments,  setAppointments]  = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [activeFilter,  setActiveFilter]  = useState('Tous');
-  const [ratingModal,   setRatingModal]   = useState(null); // appointment sélectionné
+  const [appointments, setAppointments] = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [activeFilter, setActiveFilter] = useState('Tous');
+  const [ratingModal,  setRatingModal]  = useState(null);
 
   useEffect(() => {
     api.get('/appointments')
@@ -168,7 +170,7 @@ const MyAppointments = () => {
 
   /* Annuler un RDV */
   const handleCancel = async (id) => {
-    if (!window.confirm('Confirmer l\'annulation de ce rendez-vous ?')) return;
+    if (!window.confirm("Confirmer l'annulation de ce rendez-vous ?")) return;
     try {
       await api.delete(`/appointments/${id}`);
       setAppointments(prev =>
@@ -188,8 +190,11 @@ const MyAppointments = () => {
     setRatingModal(null);
   };
 
-  const isPast        = (a) => ['past', 'no_show'].includes(a.status?.toLowerCase());
   const isCancellable = (a) => ['confirmed', 'pending'].includes(a.status?.toLowerCase());
+
+  // ✅ Bouton Rating affiché pour les RDV passés ET annulés, s'il n'a pas encore été noté
+  const isRatable = (a) =>
+    ['past', 'no_show', 'cancelled'].includes(a.status?.toLowerCase()) && !a.rated;
 
   return (
     <div className="dashboard-layout">
@@ -211,9 +216,9 @@ const MyAppointments = () => {
               {f}
               {f !== 'Tous' && (
                 <span className="ma-filter-count">
-                  {f === 'À venir'  ? appointments.filter(a => ['confirmed','pending'].includes(a.status?.toLowerCase())).length
-                 : f === 'Passés'   ? appointments.filter(a => ['past','no_show'].includes(a.status?.toLowerCase())).length
-                 : f === 'Annulés'  ? appointments.filter(a => a.status?.toLowerCase() === 'cancelled').length
+                  {f === 'À venir' ? appointments.filter(a => ['confirmed','pending'].includes(a.status?.toLowerCase())).length
+                 : f === 'Passés'  ? appointments.filter(a => ['past','no_show'].includes(a.status?.toLowerCase())).length
+                 : f === 'Annulés' ? appointments.filter(a => a.status?.toLowerCase() === 'cancelled').length
                  : 0}
                 </span>
               )}
@@ -270,7 +275,8 @@ const MyAppointments = () => {
                     <StatusBadge status={appt.status} />
 
                     <div className="ma-actions">
-                      {/* Modifier (si à venir) */}
+
+                      {/* Modifier / Annuler (si à venir) */}
                       {isCancellable(appt) && (
                         <>
                           <button className="ma-btn-edit" title="Modifier">
@@ -286,8 +292,8 @@ const MyAppointments = () => {
                         </>
                       )}
 
-                      {/* Bouton noter (si passé et pas encore noté) */}
-                      {isPast(appt) && !appt.rated && (
+                      {/* ✅ Bouton noter : passé (past/no_show) OU annulé, pas encore noté */}
+                      {isRatable(appt) && (
                         <button
                           className="ma-btn-rate"
                           onClick={() => setRatingModal(appt)}
@@ -297,6 +303,7 @@ const MyAppointments = () => {
                           Noter
                         </button>
                       )}
+
                     </div>
                   </div>
 
