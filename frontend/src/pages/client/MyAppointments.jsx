@@ -1,36 +1,44 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Clock, X, Edit2, Star } from 'lucide-react';
+import { Calendar, Clock, X, Edit2, Star, Save } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import api from '../../api/axios';
 import './MyAppointments.css';
 
-const FILTERS = ['Tous', 'À venir', 'Passés', 'Annulés'];
+const FILTERS = ['Tous', 'A venir', 'Passes', 'Annules'];
+const SLOTS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00'];
 
-/* ── Badge statut ── */
+const getNextDays = () => {
+  const days = [];
+  const today = new Date();
+  for (let i = 0; i < 14; i += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    days.push(d);
+  }
+  return days;
+};
+
 const StatusBadge = ({ status }) => {
   const map = {
-    confirmed: { label: 'Confirmé',   cls: 'badge-confirmed' },
-    pending:   { label: 'En attente', cls: 'badge-pending'   },
-    cancelled: { label: 'Annulé',     cls: 'badge-cancelled' },
-    past:      { label: 'Passé',      cls: 'badge-past'      },
-    no_show:   { label: 'Absent',     cls: 'badge-cancelled' },
+    confirmed: { label: 'Confirme', cls: 'badge-confirmed' },
+    pending: { label: 'En attente', cls: 'badge-pending' },
+    cancelled: { label: 'Annule', cls: 'badge-cancelled' },
+    past: { label: 'Passe', cls: 'badge-past' },
+    no_show: { label: 'Absent', cls: 'badge-cancelled' },
   };
   const s = map[status?.toLowerCase()] || { label: status, cls: 'badge-pending' };
   return <span className={`appt-badge ${s.cls}`}>{s.label}</span>;
 };
 
-/* ── Étoiles interactives ── */
 const StarRating = ({ value, onChange, readonly = false }) => {
   const [hovered, setHovered] = useState(0);
   return (
     <div className="star-rating">
-      {[1, 2, 3, 4, 5].map(star => (
+      {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
           size={20}
-          className={`star-icon ${
-            star <= (readonly ? value : (hovered || value)) ? 'filled' : ''
-          } ${readonly ? 'readonly' : 'interactive'}`}
+          className={`star-icon ${star <= (readonly ? value : (hovered || value)) ? 'filled' : ''} ${readonly ? 'readonly' : 'interactive'}`}
           fill={star <= (readonly ? value : (hovered || value)) ? '#f0a500' : 'none'}
           color={star <= (readonly ? value : (hovered || value)) ? '#f0a500' : '#d1d5db'}
           onMouseEnter={() => !readonly && setHovered(star)}
@@ -42,29 +50,24 @@ const StarRating = ({ value, onChange, readonly = false }) => {
   );
 };
 
-/* ── Modal de notation ── */
-const RatingModal = ({ appointment, onClose, onSubmit }) => {
-  const [rating,  setRating]  = useState(0);
-  const [comment, setComment] = useState('');
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState(null);
+const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
+  const days = getNextDays();
+  const [selectedDay, setSelectedDay] = useState(appointment?.date || '');
+  const [selectedTime, setSelectedTime] = useState(appointment?.time || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async () => {
-    if (rating === 0) {
-      setError('Veuillez sélectionner une note.');
+    if (!selectedDay || !selectedTime) {
+      setError('Choisissez une date et une heure.');
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      await api.post(`/appointments/${appointment.id}/rating`, {
-        rating,
-        comment:         comment.trim() || null,
-        professional_id: appointment.professional_id,
-      });
-      onSubmit(appointment.id, rating, comment);
+      await onSubmit(selectedDay, selectedTime);
     } catch (err) {
-      setError("Erreur lors de l'envoi. Veuillez réessayer.");
+      setError(err?.response?.data?.error || 'Modification impossible.');
     } finally {
       setSaving(false);
     }
@@ -72,259 +75,206 @@ const RatingModal = ({ appointment, onClose, onSubmit }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Noter votre rendez-vous</h3>
+          <h3 className="modal-title">Modifier le rendez-vous</h3>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <div className="modal-pro-info">
-          <div className="modal-pro-avatar">
-            {appointment.professional_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-          </div>
-          <div>
-            <p className="modal-pro-name">{appointment.professional_name}</p>
-            <p className="modal-pro-service">{appointment.service}</p>
-          </div>
+        <p className="modal-pro-name">{appointment.professional_name}</p>
+        <p className="modal-pro-service">{appointment.service}</p>
+
+        <div className="edit-days-grid">
+          {days.map((day) => {
+            const value = day.toISOString().split('T')[0];
+            const active = value === selectedDay;
+            return (
+              <button key={value} className={`edit-day-btn ${active ? 'active' : ''}`} onClick={() => setSelectedDay(value)}>
+                {day.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="modal-rating-section">
-          <p className="modal-label">Votre note</p>
-          <StarRating value={rating} onChange={setRating} />
-          <p className="modal-rating-hint">
-            {rating === 0 ? 'Cliquez pour noter' :
-             rating === 1 ? 'Très insatisfait'   :
-             rating === 2 ? 'Insatisfait'         :
-             rating === 3 ? 'Correct'             :
-             rating === 4 ? 'Satisfait'           : 'Très satisfait !'}
-          </p>
-        </div>
-
-        <div className="modal-comment-section">
-          <p className="modal-label">
-            Commentaire <span className="modal-optional">(optionnel)</span>
-          </p>
-          <textarea
-            className="modal-textarea"
-            placeholder="Partagez votre expérience…"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            maxLength={300}
-            rows={3}
-          />
-          <p className="modal-char-count">{comment.length}/300</p>
+        <div className="edit-slots-grid">
+          {SLOTS.map((slot) => (
+            <button key={slot} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
+              {slot}
+            </button>
+          ))}
         </div>
 
         {error && <p className="modal-error">{error}</p>}
 
         <div className="modal-actions">
           <button className="modal-btn-cancel" onClick={onClose}>Annuler</button>
-          <button
-            className="modal-btn-submit"
-            onClick={handleSubmit}
-            disabled={saving || rating === 0}
-          >
-            {saving ? 'Envoi…' : 'Envoyer la note'}
-          </button>
+          <button className="modal-btn-submit" onClick={handleSubmit} disabled={saving}><Save size={14} />{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
         </div>
       </div>
     </div>
   );
 };
 
-/* ── État vide ── */
+const RatingModal = ({ appointment, onClose, onSubmit }) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async () => {
+    if (rating === 0) return setError('Veuillez selectionner une note.');
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post(`/appointments/${appointment.id}/rating`, {
+        rating,
+        comment: comment.trim() || null,
+        professional_id: appointment.professional_id,
+      });
+      onSubmit(appointment.id, rating, comment);
+    } catch {
+      setError('Erreur lors de envoi.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Noter votre rendez-vous</h3>
+          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="modal-pro-info">
+          <div className="modal-pro-avatar">{appointment.professional_name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}</div>
+          <div>
+            <p className="modal-pro-name">{appointment.professional_name}</p>
+            <p className="modal-pro-service">{appointment.service}</p>
+          </div>
+        </div>
+        <div className="modal-rating-section">
+          <p className="modal-label">Votre note</p>
+          <StarRating value={rating} onChange={setRating} />
+        </div>
+        <div className="modal-comment-section">
+          <p className="modal-label">Commentaire</p>
+          <textarea className="modal-textarea" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={300} rows={3} />
+          <p className="modal-char-count">{comment.length}/300</p>
+        </div>
+        {error && <p className="modal-error">{error}</p>}
+        <div className="modal-actions">
+          <button className="modal-btn-cancel" onClick={onClose}>Annuler</button>
+          <button className="modal-btn-submit" onClick={handleSubmit} disabled={saving || rating === 0}>{saving ? 'Envoi...' : 'Envoyer la note'}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EmptyState = ({ filter }) => (
   <div className="ma-empty">
     <Calendar size={36} className="ma-empty-icon" />
     <p className="ma-empty-title">Aucun rendez-vous</p>
-    <p className="ma-empty-sub">
-      {filter === 'Tous'
-        ? "Vous n'avez pas encore de rendez-vous."
-        : `Aucun rendez-vous "${filter.toLowerCase()}" pour l'instant.`}
-    </p>
+    <p className="ma-empty-sub">{filter === 'Tous' ? "Vous n'avez pas encore de rendez-vous." : `Aucun rendez-vous ${filter.toLowerCase()} pour l'instant.`}</p>
   </div>
 );
 
-/* ══════════════════════════════════════════════════════════ */
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
-  const [loading,      setLoading]      = useState(true);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('Tous');
-  const [ratingModal,  setRatingModal]  = useState(null);
+  const [ratingModal, setRatingModal] = useState(null);
+  const [editModal, setEditModal] = useState(null);
 
   useEffect(() => {
-    api.get('/appointments')
-      .then(r => setAppointments(r.data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    api.get('/appointments').then((r) => setAppointments(r.data || [])).catch(console.error).finally(() => setLoading(false));
   }, []);
 
-  /* Filtrage */
-  const filtered = appointments.filter(a => {
-    if (activeFilter === 'Tous')    return true;
-    if (activeFilter === 'À venir') return ['confirmed', 'pending'].includes(a.status?.toLowerCase());
-    if (activeFilter === 'Passés')  return ['past', 'no_show'].includes(a.status?.toLowerCase());
-    if (activeFilter === 'Annulés') return a.status?.toLowerCase() === 'cancelled';
+  const filtered = appointments.filter((a) => {
+    if (activeFilter === 'Tous') return true;
+    if (activeFilter === 'A venir') return ['confirmed', 'pending'].includes(a.status?.toLowerCase());
+    if (activeFilter === 'Passes') return ['past', 'no_show'].includes(a.status?.toLowerCase());
+    if (activeFilter === 'Annules') return a.status?.toLowerCase() === 'cancelled';
     return true;
   });
 
-  /* Annuler un RDV */
   const handleCancel = async (id) => {
     if (!window.confirm("Confirmer l'annulation de ce rendez-vous ?")) return;
     try {
       await api.delete(`/appointments/${id}`);
-      setAppointments(prev =>
-        prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a)
-      );
-    } catch (err) { console.error(err); }
+      setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'cancelled' } : a)));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  /* Après soumission du rating */
+  const handleEditSubmit = async (date, time) => {
+    const { data } = await api.put(`/appointments/${editModal.id}`, { date, time });
+    setAppointments((prev) => prev.map((a) => (a.id === editModal.id ? { ...a, ...(data?.appointment || {}), date, time } : a)));
+    setEditModal(null);
+  };
+
   const handleRatingSubmit = (apptId, rating, comment) => {
-    setAppointments(prev =>
-      prev.map(a => a.id === apptId
-        ? { ...a, rating, comment, rated: true }
-        : a
-      )
-    );
+    setAppointments((prev) => prev.map((a) => (a.id === apptId ? { ...a, rating, comment, rated: true } : a)));
     setRatingModal(null);
   };
 
   const isCancellable = (a) => ['confirmed', 'pending'].includes(a.status?.toLowerCase());
-
-  // ✅ Bouton Rating affiché pour les RDV passés ET annulés, s'il n'a pas encore été noté
-  const isRatable = (a) =>
-    ['past', 'no_show', 'cancelled'].includes(a.status?.toLowerCase()) && !a.rated;
+  const isRatable = (a) => ['past', 'no_show', 'cancelled'].includes(a.status?.toLowerCase()) && !a.rated;
 
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <main className="dashboard-main">
+        <header className="topbar"><h1 className="page-title">Mes rendez-vous</h1></header>
 
-        <header className="topbar">
-          <h1 className="page-title">Mes rendez-vous</h1>
-        </header>
-
-        {/* Filtres */}
         <div className="ma-filters">
-          {FILTERS.map(f => (
-            <button
-              key={f}
-              className={`ma-filter-btn ${activeFilter === f ? 'active' : ''}`}
-              onClick={() => setActiveFilter(f)}
-            >
-              {f}
-              {f !== 'Tous' && (
-                <span className="ma-filter-count">
-                  {f === 'À venir' ? appointments.filter(a => ['confirmed','pending'].includes(a.status?.toLowerCase())).length
-                 : f === 'Passés'  ? appointments.filter(a => ['past','no_show'].includes(a.status?.toLowerCase())).length
-                 : f === 'Annulés' ? appointments.filter(a => a.status?.toLowerCase() === 'cancelled').length
-                 : 0}
-                </span>
-              )}
-            </button>
-          ))}
+          {FILTERS.map((f) => <button key={f} className={`ma-filter-btn ${activeFilter === f ? 'active' : ''}`} onClick={() => setActiveFilter(f)}>{f}</button>)}
         </div>
 
-        {/* Liste */}
-        {loading ? (
-          <p className="loading-text">Chargement…</p>
-        ) : filtered.length === 0 ? (
-          <EmptyState filter={activeFilter} />
-        ) : (
+        {loading ? <p className="loading-text">Chargement...</p> : filtered.length === 0 ? <EmptyState filter={activeFilter} /> : (
           <div className="ma-list">
-            {filtered.map(appt => {
-              const d     = new Date(appt.date);
-              const day   = d.getDate().toString().padStart(2, '0');
+            {filtered.map((appt) => {
+              const d = new Date(appt.date);
+              const day = d.getDate().toString().padStart(2, '0');
               const month = d.toLocaleString('fr-FR', { month: 'short' }).replace('.', '');
-              const year  = d.getFullYear();
+              const year = d.getFullYear();
 
               return (
                 <div key={appt.id} className="ma-card">
-
-                  {/* Date */}
-                  <div className="ma-date-col">
-                    <span className="ma-day">{day}</span>
-                    <span className="ma-month">{month} {year}</span>
-                  </div>
-
+                  <div className="ma-date-col"><span className="ma-day">{day}</span><span className="ma-month">{month} {year}</span></div>
                   <div className="ma-divider" />
-
-                  {/* Infos */}
                   <div className="ma-info">
                     <p className="ma-pro-name">{appt.professional_name}</p>
                     <p className="ma-service">{appt.service}</p>
-                    <div className="ma-meta">
-                      <Clock size={13} />
-                      <span>{appt.time} · {appt.duration} min</span>
-                    </div>
-
-                    {/* Note déjà donnée */}
-                    {appt.rated && (
-                      <div className="ma-existing-rating">
-                        <StarRating value={appt.rating} readonly />
-                        {appt.comment && (
-                          <p className="ma-existing-comment">"{appt.comment}"</p>
-                        )}
-                      </div>
-                    )}
+                    <div className="ma-meta"><Clock size={13} /><span>{appt.time} � {appt.duration} min</span></div>
+                    {appt.rated && <div className="ma-existing-rating"><StarRating value={appt.rating} readonly />{appt.comment && <p className="ma-existing-comment">"{appt.comment}"</p>}</div>}
                   </div>
-
-                  {/* Droite : badge + actions */}
                   <div className="ma-right">
                     <StatusBadge status={appt.status} />
-
                     <div className="ma-actions">
-
-                      {/* Modifier / Annuler (si à venir) */}
                       {isCancellable(appt) && (
                         <>
-                          <button className="ma-btn-edit" title="Modifier">
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            className="ma-btn-cancel"
-                            title="Annuler"
-                            onClick={() => handleCancel(appt.id)}
-                          >
-                            <X size={14} />
-                          </button>
+                          <button className="ma-btn-edit" title="Modifier" onClick={() => setEditModal(appt)}><Edit2 size={14} /></button>
+                          <button className="ma-btn-cancel" title="Annuler" onClick={() => handleCancel(appt.id)}><X size={14} /></button>
                         </>
                       )}
-
-                      {/* ✅ Bouton noter : passé (past/no_show) OU annulé, pas encore noté */}
-                      {isRatable(appt) && (
-                        <button
-                          className="ma-btn-rate"
-                          onClick={() => setRatingModal(appt)}
-                          title="Noter ce rendez-vous"
-                        >
-                          <Star size={14} />
-                          Noter
-                        </button>
-                      )}
-
+                      {isRatable(appt) && <button className="ma-btn-rate" onClick={() => setRatingModal(appt)} title="Noter ce rendez-vous"><Star size={14} />Noter</button>}
                     </div>
                   </div>
-
                 </div>
               );
             })}
           </div>
         )}
 
-        {/* Modal de notation */}
-        {ratingModal && (
-          <RatingModal
-            appointment={ratingModal}
-            onClose={() => setRatingModal(null)}
-            onSubmit={handleRatingSubmit}
-          />
-        )}
-
+        {ratingModal && <RatingModal appointment={ratingModal} onClose={() => setRatingModal(null)} onSubmit={handleRatingSubmit} />}
+        {editModal && <EditAppointmentModal appointment={editModal} onClose={() => setEditModal(null)} onSubmit={handleEditSubmit} />}
       </main>
     </div>
   );
 };
 
 export default MyAppointments;
+

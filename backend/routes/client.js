@@ -20,6 +20,12 @@ const fetchUsersByIds = async (ids) => {
   return data;
 };
 
+const buildAppointmentDateTime = (date, time) => {
+  const nextDateTime = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(nextDateTime.getTime())) return null;
+  return nextDateTime.toISOString();
+};
+
 router.get('/professionals', async (req, res) => {
   try {
     const { data, error } = await supabase.from('utilisateur').select('*').eq('role', 'professional');
@@ -27,7 +33,7 @@ router.get('/professionals', async (req, res) => {
     res.json((data || []).map(mapProfessional));
   } catch (err) {
     console.error('GET /professionals error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les professionnels' });
+    res.status(500).json({ error: 'Impossible de recuperer les professionnels' });
   }
 });
 
@@ -39,7 +45,7 @@ router.get('/professionals/:id/services', async (req, res) => {
     res.json((data || []).map(mapService));
   } catch (err) {
     console.error('GET /professionals/:id/services error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les services du professionnel' });
+    res.status(500).json({ error: 'Impossible de recuperer les services du professionnel' });
   }
 });
 
@@ -49,26 +55,26 @@ router.get('/appointments', async (req, res) => {
       .from('Appointment')
       .select('*')
       .eq('client_id', req.user.id)
-      .order('date_heure', { ascending: false }); // ✅ trié par date réelle du RDV
+      .order('date_heure', { ascending: false });
 
     if (error) throw error;
 
     const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
-    const proIds     = [...new Set((appts || []).map((a) => a.professional_id).filter(Boolean))];
+    const proIds = [...new Set((appts || []).map((a) => a.professional_id).filter(Boolean))];
     const serviceRows = await fetchServicesByIds(serviceIds);
-    const proRows     = await fetchUsersByIds(proIds);
-    const clientRows  = await fetchUsersByIds([req.user.id]);
-    const client      = clientRows[0] || { nom: '' };
+    const proRows = await fetchUsersByIds(proIds);
+    const clientRows = await fetchUsersByIds([req.user.id]);
+    const client = clientRows[0] || { nom: '' };
 
     const servicesById = Object.fromEntries((serviceRows || []).map((svc) => [svc.id, svc]));
-    const prosById     = Object.fromEntries((proRows     || []).map((pro) => [pro.id, pro]));
+    const prosById = Object.fromEntries((proRows || []).map((pro) => [pro.id, pro]));
 
     res.json((appts || []).map((appt) =>
       mapAppointment(appt, servicesById[appt.service_id], prosById[appt.professional_id], client)
     ));
   } catch (err) {
     console.error('GET /appointments error', err);
-    res.status(500).json({ error: 'Impossible de récupérer vos rendez-vous' });
+    res.status(500).json({ error: 'Impossible de recuperer vos rendez-vous' });
   }
 });
 
@@ -76,52 +82,88 @@ router.post('/appointments', async (req, res) => {
   try {
     const { professional_id, service_id, date, time } = req.body;
     if (!professional_id || !service_id || !date || !time) {
-      return res.status(400).json({ error: 'Données de rendez-vous incomplètes' });
+      return res.status(400).json({ error: 'Donnees de rendez-vous incompletes' });
     }
 
-    const dateHeureSaisie = new Date(`${date}T${time}:00`).toISOString();
+    const dateHeure = buildAppointmentDateTime(date, time);
+    if (!dateHeure) {
+      return res.status(400).json({ error: 'Date ou heure invalide' });
+    }
+
     const payload = {
-      client_id:       req.user.id,
+      client_id: req.user.id,
       professional_id,
       service_id,
-      date_heure:      dateHeureSaisie,
-      status:          'pending',
+      date_heure: dateHeure,
+      status: 'pending',
     };
 
     const { data, error } = await supabase.from('Appointment').insert([payload]).select().single();
-    if (error) {
-      console.error('Erreur Supabase détaillée:', error);
-      throw error;
-    }
-    res.status(201).json({ message: 'Rendez-vous créé', appointment: data });
+    if (error) throw error;
+    res.status(201).json({ message: 'Rendez-vous cree', appointment: data });
   } catch (err) {
     console.error('POST /appointments error', err);
-    res.status(500).json({ error: 'Impossible de créer le rendez-vous' });
+    res.status(500).json({ error: 'Impossible de creer le rendez-vous' });
   }
 });
 
 router.put('/appointments/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-    if (!status) return res.status(400).json({ error: 'Statut requis' });
+    const { status, date, time } = req.body;
+    if (!status && !(date && time)) {
+      return res.status(400).json({ error: 'Statut ou nouvelle date/heure requis' });
+    }
 
     const { data: appointment, error: fetchError } = await supabase
-      .from('Appointment').select('*').eq('id', id).single();
+      .from('Appointment')
+      .select('*')
+      .eq('id', id)
+      .single();
     if (fetchError) throw fetchError;
     if (!appointment) return res.status(404).json({ error: 'Rendez-vous introuvable' });
 
     const allowed = [appointment.client_id, appointment.professional_id].includes(req.user.id);
-    if (!allowed) return res.status(403).json({ error: 'Accès non autorisé' });
+    if (!allowed) return res.status(403).json({ error: 'Acces non autorise' });
+
+    const updates = {};
+    if (status) updates.status = status;
+
+    if (date && time) {
+      if (appointment.client_id !== req.user.id) {
+        return res.status(403).json({ error: 'Seul le client peut modifier ce rendez-vous' });
+      }
+      if (!['pending', 'confirmed'].includes(String(appointment.status || '').toLowerCase())) {
+        return res.status(400).json({ error: 'Ce rendez-vous ne peut pas etre modifie' });
+      }
+
+      const dateHeure = buildAppointmentDateTime(date, time);
+      if (!dateHeure) {
+        return res.status(400).json({ error: 'Date ou heure invalide' });
+      }
+
+      updates.date_heure = dateHeure;
+    }
 
     const { data, error } = await supabase
-      .from('Appointment').update({ status }).eq('id', id).select().single();
+      .from('Appointment')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
     if (error) throw error;
 
-    res.json({ message: 'Statut du rendez-vous mis à jour', appointment: data });
+    const [service] = await fetchServicesByIds(data.service_id ? [data.service_id] : []);
+    const [professional] = await fetchUsersByIds(data.professional_id ? [data.professional_id] : []);
+    const [client] = await fetchUsersByIds(data.client_id ? [data.client_id] : []);
+
+    res.json({
+      message: 'Rendez-vous mis a jour',
+      appointment: mapAppointment(data, service, professional, client),
+    });
   } catch (err) {
     console.error('PUT /appointments/:id error', err);
-    res.status(500).json({ error: 'Impossible de mettre à jour le rendez-vous' });
+    res.status(500).json({ error: err?.message || 'Impossible de mettre a jour le rendez-vous' });
   }
 });
 
@@ -136,11 +178,10 @@ router.delete('/appointments/:id', async (req, res) => {
       .select()
       .single();
     if (error) throw error;
-    res.json({ message: 'Rendez-vous annulé', appointment: data });
+    res.json({ message: 'Rendez-vous annule', appointment: data });
   } catch (err) {
     console.error('DELETE /appointments/:id error', err);
-    // ✅ CORRIGÉ — apostrophe échappée
-    res.status(500).json({ error: `Impossible d'annuler le rendez-vous` });
+    res.status(500).json({ error: "Impossible d'annuler le rendez-vous" });
   }
 });
 

@@ -210,3 +210,8 @@
     color: #9ca3af;
     margin: 0;
 }
+.edit-days-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:16px 0; }
+.edit-day-btn, .edit-slot-btn { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px; font-size:12.5px; cursor:pointer; }
+.edit-day-btn.active, .edit-slot-btn.active { background:#042C53; color:#fff; border-color:#042C53; }
+.edit-slots-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+.ma-btn-rate { display:flex; align-items:center; gap:6px; border:none; background:#042C53; color:#fff; border-radius:8px; padding:7px 12px; font-size:12px; cursor:pointer; }
