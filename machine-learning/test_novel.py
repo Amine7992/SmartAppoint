@@ -1,52 +1,31 @@
-import pandas as pd
 import joblib
+import pandas as pd
 import numpy as np
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-# 1. Chargement du modèle
-try:
-    model = joblib.load('modele_prediction_paiement.pkl')
-    print("✅ Modèle chargé avec succès.")
-except FileNotFoundError:
-    print("❌ Erreur : Le fichier 'modele_prediction_paiement.pkl' est introuvable.")
-    exit()
+# 1. Charger le modèle et les données de test réelles (les 20%)
+model = joblib.load('modele_prediction_paiement.pkl')
+df_inconnu = pd.read_csv('IAmodel_test_pfe.csv')
 
-# 2. Définition des colonnes (DOIT être dans le même ordre que l'entraînement)
-columns = [
-    'delai_reservation_jours', 
-    'score_fiabilite_client', 
-    'moyenne_notes_donnees', 
-    'anciennete_compte_jours', 
-    'nombre_total_rdv_client', 
-    'score_distance_geo'
-]
+# 2. Séparer X et Y
+y_actual = df_inconnu['cible_paiement']
+X_inconnu = df_inconnu.drop(['cible_paiement'], axis=1)
 
-# 3. Création des scénarios réels
-print("\n🔥 EXÉCUTION DU STRESS TEST :")
+# Note : 'poids_fidelite' est déjà dans le CSV si tu as sauvegardé X_test après calcul
+# Sinon, recalcule-le ici :
+if 'poids_fidelite' not in X_inconnu.columns:
+    X_inconnu['poids_fidelite'] = X_inconnu['score_fiabilite_client'] * np.log1p(X_inconnu['nombre_total_rdv_client'])
 
-scenarios_data = [
-    # Scénario 1 : Le "Profil Parfait" (Vieux client, fidèle, habite à côté)
-   [0, 1.0, 5.0, 1000, 50, 0.1], 
-    
-    # Scénario 2 : Le "Profil à Risque" (Nouveau, score bas, très loin, réservé 1 mois à l'avance)
-    [30, 0.15, 2.0, 1, 0, 150.0],
-    
-    # Scénario 3 : Le "Profil Moyen" (Compte récent mais bon score de fiabilité)
-    [5, 0.80, 4.0, 30, 2, 5.0]
-]
+# 3. Prédictions
+y_pred = model.predict(X_inconnu)
 
-scenarios = pd.DataFrame(scenarios_data, columns=columns)
+# 4. Affichage de la Matrice
+cm = confusion_matrix(y_actual, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Risque', 'Validé'], yticklabels=['No-Show', 'Payé'])
+plt.title('Matrice de Confusion sur Données Inconnues (20%)')
+plt.show()
 
-# 4. Prédictions et Probabilités
-preds = model.predict(scenarios)
-probs = model.predict_proba(scenarios)
-
-# 5. Affichage des résultats
-print("-" * 50)
-for i, p in enumerate(preds):
-    label = "✅ VALIDÉ AUTOMATIQUEMENT" if p == 1 else "⚠️ VÉRIFICATION REQUISE (Risque)"
-    confiance = probs[i][p] * 100
-    
-    print(f"Scénario {i+1} :")
-    print(f"  Résultat  : {label}")
-    print(f"  Confiance : {confiance:.2f}%")
-    print("-" * 50)
+print(classification_report(y_actual, y_pred))

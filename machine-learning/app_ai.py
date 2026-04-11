@@ -3,13 +3,14 @@ import os
 
 from flask import Flask, jsonify, request
 import joblib
+import numpy as np
 import pandas as pd
 
 app = Flask(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / 'modele_prediction_paiement.pkl'
-FEATURE_COLUMNS = [
+BASE_FEATURE_COLUMNS = [
     'delai_reservation_jours',
     'score_fiabilite_client',
     'moyenne_notes_donnees',
@@ -17,9 +18,23 @@ FEATURE_COLUMNS = [
     'nombre_total_rdv_client',
     'score_distance_geo',
 ]
+FEATURE_COLUMNS = [*BASE_FEATURE_COLUMNS, 'poids_fidelite']
 
 # Chargement unique du modele au demarrage
 model = joblib.load(MODEL_PATH)
+if hasattr(model, 'n_jobs'):
+    model.n_jobs = 1
+
+
+def enrich_features(row):
+    normalized = {column: float(row.get(column, 0)) for column in BASE_FEATURE_COLUMNS}
+    normalized['poids_fidelite'] = float(
+        row.get(
+            'poids_fidelite',
+            normalized['score_fiabilite_client'] * np.log1p(normalized['nombre_total_rdv_client'])
+        )
+    )
+    return normalized
 
 
 @app.get('/health')
@@ -28,6 +43,7 @@ def health():
         'status': 'ok',
         'model_loaded': MODEL_PATH.exists(),
         'model_path': str(MODEL_PATH),
+        'feature_columns': FEATURE_COLUMNS,
     })
 
 
@@ -44,14 +60,15 @@ def predict():
             }), 400
 
         if isinstance(features, dict):
-            row = {column: float(features.get(column, 0)) for column in FEATURE_COLUMNS}
+            row = enrich_features(features)
         elif isinstance(features, list):
-            if len(features) != len(FEATURE_COLUMNS):
+            if len(features) not in (len(BASE_FEATURE_COLUMNS), len(FEATURE_COLUMNS)):
                 return jsonify({
                     'status': 'error',
-                    'message': f'{len(FEATURE_COLUMNS)} variables sont attendues.'
+                    'message': f'{len(BASE_FEATURE_COLUMNS)} ou {len(FEATURE_COLUMNS)} variables sont attendues.'
                 }), 400
-            row = {column: float(value) for column, value in zip(FEATURE_COLUMNS, features)}
+            columns = BASE_FEATURE_COLUMNS if len(features) == len(BASE_FEATURE_COLUMNS) else FEATURE_COLUMNS
+            row = enrich_features({column: float(value) for column, value in zip(columns, features)})
         else:
             return jsonify({
                 'status': 'error',

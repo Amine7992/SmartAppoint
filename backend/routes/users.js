@@ -5,6 +5,7 @@ const path = require('path');
 const router = express.Router();
 const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
+const { enrichProfileWithCoordinates } = require('../API/gecorder');
 const AVATAR_BUCKET = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const STORAGE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
@@ -69,7 +70,7 @@ router.use(auth);
 
 router.put('/users/profile', async (req, res) => {
   try {
-    const { nom, prenom, email, phone, name, specialite } = req.body;
+    const { nom, prenom, email, phone, name, specialite, city, adresse, description } = req.body;
     const updates = {};
     if (nom !== undefined) updates.nom = nom || null;
     if (prenom !== undefined) updates.prenom = prenom || null;
@@ -77,9 +78,30 @@ router.put('/users/profile', async (req, res) => {
     if (email !== undefined) updates.email = email || null;
     if (phone !== undefined) updates.phone = phone || null;
     if (specialite !== undefined) updates.specialite = specialite || null;
+    if (city !== undefined) updates.city = city || null;
+    if (adresse !== undefined) updates.adresse = adresse || null;
+    if (description !== undefined) updates.description = description || null;
 
     if (!Object.keys(updates).length) {
       return res.status(400).json({ error: 'Aucune donnee a mettre a jour' });
+    }
+
+    if (city !== undefined || adresse !== undefined) {
+      const { data: currentUser, error: currentUserError } = await supabase
+        .from('utilisateur')
+        .select('*')
+        .eq('id', req.user.id)
+        .single();
+      if (currentUserError) throw currentUserError;
+
+      const enrichedProfile = await enrichProfileWithCoordinates({
+        ...currentUser,
+        ...updates,
+      });
+
+      updates.city = enrichedProfile.city ?? updates.city ?? null;
+      updates.lat = enrichedProfile.lat ?? 0;
+      updates.lon = enrichedProfile.lon ?? 0;
     }
 
     const { data, error } = await supabase.from('utilisateur').update(updates).eq('id', req.user.id).select().single();

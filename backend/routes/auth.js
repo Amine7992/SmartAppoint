@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
+const { enrichProfileWithCoordinates } = require('../API/gecorder');
 
 const mapUser = (userData) => ({
   ...userData,
@@ -22,7 +23,7 @@ router.post('/register', async (req, res) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
     if (authError) throw authError;
 
-    const userRow = {
+    const baseUserRow = {
       id: authData.user.id,
       nom: name,
       prenom,
@@ -36,9 +37,11 @@ router.post('/register', async (req, res) => {
     };
 
     if (role === 'professional') {
-      userRow.specialite = specialite || null;
-      userRow.description = description || null;
+      baseUserRow.specialite = specialite || null;
+      baseUserRow.description = description || null;
     }
+
+    const userRow = await enrichProfileWithCoordinates(baseUserRow);
 
     const { error: dbError } = await supabase.from('utilisateur').insert([userRow]);
     if (dbError) throw dbError;

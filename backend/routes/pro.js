@@ -8,7 +8,7 @@ router.use(auth);
 
 const requireProfessional = (req, res, next) => {
   if (req.user.role !== 'professional') {
-    return res.status(403).json({ error: 'Accès réservé aux professionnels' });
+    return res.status(403).json({ error: 'Acces reserve aux professionnels' });
   }
   next();
 };
@@ -27,14 +27,119 @@ const fetchClientsByIds = async (ids) => {
   return data;
 };
 
-// --- ROUTE CORRIGÉE POUR LE PLANNING ET LE CALENDRIER ---
+const fetchAppointmentsByClientIds = async (ids) => {
+  if (!ids.length) return [];
+  const { data, error } = await supabase
+    .from('Appointment')
+    .select('*')
+    .in('client_id', ids)
+    .order('date_heure', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const diffInDays = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  return Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+};
+
+const getDistanceScore = (client, professional) => {
+  const clientLat = Number(client?.lat);
+  const clientLon = Number(client?.lon);
+  const proLat = Number(professional?.lat);
+  const proLon = Number(professional?.lon);
+
+  if ([clientLat, clientLon, proLat, proLon].every((value) => Number.isFinite(value))) {
+    const earthRadiusKm = 6371;
+    const toRadians = (degrees) => (degrees * Math.PI) / 180;
+    const latDelta = toRadians(proLat - clientLat);
+    const lonDelta = toRadians(proLon - clientLon);
+    const a =
+      Math.sin(latDelta / 2) ** 2 +
+      Math.cos(toRadians(clientLat)) *
+        Math.cos(toRadians(proLat)) *
+        Math.sin(lonDelta / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Number((earthRadiusKm * c).toFixed(4));
+  }
+
+  if (
+    client?.city &&
+    professional?.city &&
+    String(client.city).trim().toLowerCase() === String(professional.city).trim().toLowerCase()
+  ) {
+    return 0;
+  }
+
+  return 10;
+};
+
+const buildModelFeatures = ({ appointment, client, professional, history }) => {
+  const totalAppointments = history.length;
+  const noShowCount = history.filter((item) => String(item.status || '').toLowerCase() === 'cancelled').length;
+  const completedCount = Math.max(0, totalAppointments - noShowCount);
+  const reliabilityScore = totalAppointments ? completedCount / totalAppointments : 0.5;
+
+  const ratings = history
+    .map((item) => Number(item.rating))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const averageRating = ratings.length
+    ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length
+    : 0;
+
+  const normalizedReliabilityScore = Number(clamp(reliabilityScore, 0, 1).toFixed(4));
+  const normalizedTotalAppointments = Math.max(0, totalAppointments);
+
+  return {
+    delai_reservation_jours: diffInDays(appointment.created_at || appointment.date_heure, appointment.date_heure),
+    score_fiabilite_client: normalizedReliabilityScore,
+    moyenne_notes_donnees: Number(clamp(averageRating, 0, 5).toFixed(2)),
+    anciennete_compte_jours: diffInDays(client?.created_at || appointment.created_at, new Date().toISOString()),
+    nombre_total_rdv_client: normalizedTotalAppointments,
+    score_distance_geo: getDistanceScore(client, professional),
+    poids_fidelite: Number((normalizedReliabilityScore * Math.log1p(normalizedTotalAppointments)).toFixed(6)),
+  };
+};
+
+const predictRiskScore = async (features) => {
+  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+  const response = await fetch(aiServiceUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ features }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Service IA indisponible: ${response.status} ${errorText}`);
+  }
+
+  const payload = await response.json();
+  if (payload.status !== 'success') {
+    throw new Error(payload.message || 'Prediction IA invalide');
+  }
+
+  return {
+    ai_score: Number(clamp(payload.risk_score ?? 0, 0, 1).toFixed(4)),
+    ai_prediction: payload.prediction,
+    ai_confidence: payload.confiance ?? null,
+    ai_attendance_score: payload.attendance_score ?? null,
+    ai_features: features,
+    ai_generated_at: new Date().toISOString(),
+  };
+};
+
 router.get('/appointments', requireProfessional, async (req, res) => {
   try {
     const { data: appts, error } = await supabase
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .order('date_heure', { ascending: true }); // Tri par heure de RDV et non création
+      .order('date_heure', { ascending: true });
 
     if (error) throw error;
 
@@ -47,25 +152,22 @@ router.get('/appointments', requireProfessional, async (req, res) => {
     const servicesById = Object.fromEntries((services || []).map((svc) => [svc.id, svc]));
     const clientsById = Object.fromEntries((clients || []).map((cli) => [cli.id, cli]));
 
-    // On formate les données pour que le Front-end trouve "date" et "time"
     const formatted = (appts || []).map((appt) => {
       const dt = new Date(appt.date_heure);
       return {
         ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
-        // IMPORTANT : Ces clés permettent au planning de placer le RDV au bon endroit
-        date: appt.date_heure.split('T')[0], 
-        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':')
+        date: appt.date_heure.split('T')[0],
+        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':'),
       };
     });
 
     res.json(formatted);
   } catch (err) {
     console.error('GET /pro/appointments error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les rendez-vous' });
+    res.status(500).json({ error: 'Impossible de recuperer les rendez-vous' });
   }
 });
 
-// --- ROUTE CORRIGÉE POUR "AUJOURD'HUI" ---
 router.get('/appointments/today', requireProfessional, async (req, res) => {
   try {
     const today = new Date();
@@ -76,7 +178,7 @@ router.get('/appointments/today', requireProfessional, async (req, res) => {
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .gte('date_heure', start) // Filtrer par l'heure du RDV
+      .gte('date_heure', start)
       .lt('date_heure', end)
       .order('date_heure', { ascending: true });
 
@@ -95,40 +197,75 @@ router.get('/appointments/today', requireProfessional, async (req, res) => {
       return {
         ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
         date: appt.date_heure.split('T')[0],
-        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':')
+        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':'),
       };
     }));
   } catch (err) {
     console.error('GET /pro/appointments/today error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les rendez-vous d’aujourd’hui' });
+    res.status(500).json({ error: "Impossible de recuperer les rendez-vous d'aujourd'hui" });
   }
 });
 
 router.get('/appointments/risks', requireProfessional, async (req, res) => {
   try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+      'Surrogate-Control': 'no-store',
+    });
+
+    const now = new Date().toISOString();
     const { data: appts, error } = await supabase
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
-      .order('date_heure', { ascending: false });
+      .gte('date_heure', now)
+      .order('date_heure', { ascending: true });
 
     if (error) throw error;
 
     const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
     const clientIds = [...new Set((appts || []).map((a) => a.client_id).filter(Boolean))];
 
-    const services = await fetchServicesByIds(serviceIds);
-    const clients = await fetchClientsByIds(clientIds);
+    const [services, clients, clientAppointments, professionalRows] = await Promise.all([
+      fetchServicesByIds(serviceIds),
+      fetchClientsByIds(clientIds),
+      fetchAppointmentsByClientIds(clientIds),
+      fetchClientsByIds([req.user.id]),
+    ]);
+
     const servicesById = Object.fromEntries((services || []).map((svc) => [svc.id, svc]));
     const clientsById = Object.fromEntries((clients || []).map((cli) => [cli.id, cli]));
+    const historyByClientId = {};
 
-    res.json((appts || []).map((appt) => ({
-      ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
-      ai_score: 0,
-    })));
+    for (const item of clientAppointments || []) {
+      if (!item.client_id) continue;
+      historyByClientId[item.client_id] = historyByClientId[item.client_id] || [];
+      historyByClientId[item.client_id].push(item);
+    }
+
+    const professional = professionalRows[0] || null;
+    const riskAppointments = await Promise.all((appts || []).map(async (appt) => {
+      const client = clientsById[appt.client_id];
+      const features = buildModelFeatures({
+        appointment: appt,
+        client,
+        professional,
+        history: historyByClientId[appt.client_id] || [],
+      });
+      const prediction = await predictRiskScore(features);
+
+      return {
+        ...mapAppointment(appt, servicesById[appt.service_id], null, client),
+        ...prediction,
+      };
+    }));
+
+    res.json(riskAppointments);
   } catch (err) {
     console.error('GET /pro/appointments/risks error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les risques' });
+    res.status(500).json({ error: 'Impossible de recuperer les risques' });
   }
 });
 
@@ -181,7 +318,7 @@ router.get('/clients', requireProfessional, async (req, res) => {
     res.json(clientsMapped);
   } catch (err) {
     console.error('GET /pro/clients error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les clients' });
+    res.status(500).json({ error: 'Impossible de recuperer les clients' });
   }
 });
 
@@ -196,7 +333,7 @@ router.get('/services', requireProfessional, async (req, res) => {
     res.json((data || []).map(mapService));
   } catch (err) {
     console.error('GET /pro/services error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les services' });
+    res.status(500).json({ error: 'Impossible de recuperer les services' });
   }
 });
 
@@ -204,9 +341,9 @@ router.post('/services', requireProfessional, async (req, res) => {
   try {
     const { name, description, duration, price } = req.body;
     if (!name || !duration) {
-      return res.status(400).json({ error: 'Nom et durée du service requis' });
+      return res.status(400).json({ error: 'Nom et duree du service requis' });
     }
-    const { data, error } = await supabase.from('Service').insert([{ 
+    const { data, error } = await supabase.from('Service').insert([{
       nom: name,
       description: description || null,
       duree_minutes: parseInt(duration, 10) || 30,
@@ -217,7 +354,7 @@ router.post('/services', requireProfessional, async (req, res) => {
     res.status(201).json(mapService(data));
   } catch (err) {
     console.error('POST /pro/services error', err);
-    res.status(500).json({ error: 'Impossible de créer le service' });
+    res.status(500).json({ error: 'Impossible de creer le service' });
   }
 });
 
@@ -242,7 +379,7 @@ router.put('/services/:id', requireProfessional, async (req, res) => {
     res.json(mapService(data));
   } catch (err) {
     console.error('PUT /pro/services/:id error', err);
-    res.status(500).json({ error: 'Impossible de mettre à jour le service' });
+    res.status(500).json({ error: 'Impossible de mettre a jour le service' });
   }
 });
 
@@ -255,7 +392,7 @@ router.delete('/services/:id', requireProfessional, async (req, res) => {
       .eq('id', id)
       .eq('professional_id', req.user.id);
     if (error) throw error;
-    res.json({ message: 'Service supprimé' });
+    res.json({ message: 'Service supprime' });
   } catch (err) {
     console.error('DELETE /pro/services/:id error', err);
     res.status(500).json({ error: 'Impossible de supprimer le service' });
@@ -272,8 +409,7 @@ router.get('/stats', requireProfessional, async (req, res) => {
 
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-    
-    // Stats basées sur l'heure du RDV
+
     const { data: currentMonthAppts, error: monthError } = await supabase
       .from('Appointment')
       .select('*')
@@ -298,7 +434,7 @@ router.get('/stats', requireProfessional, async (req, res) => {
     });
   } catch (err) {
     console.error('GET /pro/stats error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les statistiques' });
+    res.status(500).json({ error: 'Impossible de recuperer les statistiques' });
   }
 });
 
@@ -338,7 +474,7 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
     });
   } catch (err) {
     console.error('GET /pro/stats/detailed error', err);
-    res.status(500).json({ error: 'Impossible de récupérer les statistiques détaillées' });
+    res.status(500).json({ error: 'Impossible de recuperer les statistiques detaillees' });
   }
 });
 
