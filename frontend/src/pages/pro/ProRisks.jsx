@@ -130,7 +130,7 @@ const ProRisks = () => {
                 </tr>
               </thead>
               <tbody>
-                {risks.sort((a, b) => b.ai_score - a.ai_score).map((r) => {
+                {[...risks].sort((a, b) => b.ai_score - a.ai_score).map((r) => {
                   const level = getRiskLevel(r.ai_score);
                   const labels = { high: 'Eleve', medium: 'Moyen', low: 'Faible' };
 
