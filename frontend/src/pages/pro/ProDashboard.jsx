@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock } from 'lucide-react';
+import { Clock, Bell, Calendar, AlertCircle, Info, CheckCheck } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
@@ -13,32 +13,61 @@ const EmptyTimeline = () => (
   </div>
 );
 
+const notificationIcons = {
+  appointment: <Calendar size={15} />,
+  alert: <AlertCircle size={15} />,
+  info: <Info size={15} />,
+};
+
+const notificationClasses = {
+  appointment: 'appointment',
+  alert: 'alert',
+  info: 'info',
+};
+
+const timeAgo = (dateStr) => {
+  if (!dateStr) return '';
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return "A l'instant";
+  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`;
+  return `Il y a ${Math.floor(diff / 86400)} j`;
+};
+
 const ProDashboard = () => {
-  const { user } = useAuth();
+  useAuth();
   const navigate = useNavigate();
+  const notifMenuRef = useRef(null);
 
   const [stats, setStats] = useState({ today: 0, month: 0, absence_rate: 0, rating: 0 });
   const [todayAppts, setTodayAppts] = useState([]);
   const [allAppts, setAllAppts] = useState([]);
   const [calendarDays, setCalendarDays] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setNotifLoading(true);
       try {
-        const [statsRes, apptRes, allRes] = await Promise.all([
+        const [statsRes, apptRes, allRes, notifRes] = await Promise.all([
           api.get('/pro/stats'),
           api.get('/pro/appointments/today'),
           api.get('/pro/appointments'),
+          api.get('/notifications'),
         ]);
         setStats(statsRes.data || null);
         setTodayAppts(apptRes.data || []);
         setAllAppts(allRes.data || []);
+        setNotifications(notifRes.data || []);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
+        setNotifLoading(false);
       }
     };
     fetchData();
@@ -54,6 +83,17 @@ const ProDashboard = () => {
     for (let i = 0; i < startOffset; i += 1) days.push(null);
     for (let d = 1; d <= daysInMonth; d += 1) days.push(d);
     setCalendarDays(days);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const getDayStatusDot = (day) => {
@@ -108,6 +148,30 @@ const ProDashboard = () => {
     return `Risque IA ${Math.round(score * 100)}%`;
   };
 
+  const unreadNotifications = notifications.filter((notif) => !notif.read).length;
+  const hasNotifications = notifications.length > 0;
+  const visibleNotifications = notifications.slice(0, 5);
+
+  const markNotificationRead = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/read`);
+      setNotifications((prev) => prev.map((notif) => (
+        notif.id === id ? { ...notif, read: true } : notif
+      )));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.put('/notifications/read-all');
+      setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="pro-layout">
       <ProSidebar />
@@ -116,6 +180,65 @@ const ProDashboard = () => {
           <h1 className="pro-page-title">Tableau de bord</h1>
           <div className="pro-topbar-right">
             <span className="pro-topbar-date">{todayCapitalized}</span>
+            <div className="pro-notif-menu" ref={notifMenuRef}>
+              <button
+                type="button"
+                className={`pro-notif-trigger ${hasNotifications ? 'has-alert' : ''} ${notifOpen ? 'open' : ''}`}
+                onClick={() => setNotifOpen((prev) => !prev)}
+                aria-label="Notifications"
+              >
+                <Bell size={18} />
+                {unreadNotifications > 0 ? (
+                  <span className="pro-notif-badge">{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>
+                ) : null}
+              </button>
+
+              {notifOpen ? (
+                <div className="pro-notif-dropdown">
+                  <div className="pro-notif-dropdown-head">
+                    <div>
+                      <p className="pro-notif-dropdown-title">Notifications</p>
+                      <p className="pro-notif-dropdown-sub">
+                        {unreadNotifications > 0 ? `${unreadNotifications} non lue${unreadNotifications > 1 ? 's' : ''}` : 'Tout est lu'}
+                      </p>
+                    </div>
+                    {unreadNotifications > 0 ? (
+                      <button type="button" className="pro-notif-mark-all" onClick={markAllNotificationsRead}>
+                        <CheckCheck size={14} />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {notifLoading ? (
+                    <p className="pro-notif-empty">Chargement...</p>
+                  ) : visibleNotifications.length === 0 ? (
+                    <p className="pro-notif-empty">Aucune notification pour le moment.</p>
+                  ) : (
+                    <div className="pro-notif-dropdown-list">
+                      {visibleNotifications.map((notif) => (
+                        <button
+                          type="button"
+                          key={notif.id}
+                          className={`pro-notif-item ${notif.read ? 'read' : 'unread'}`}
+                          onClick={() => {
+                            if (!notif.read) markNotificationRead(notif.id);
+                          }}
+                        >
+                          <span className={`pro-notif-item-icon ${notificationClasses[notif.type] || 'info'}`}>
+                            {notificationIcons[notif.type] || <Info size={15} />}
+                          </span>
+                          <span className="pro-notif-item-body">
+                            <span className="pro-notif-item-message">{notif.message}</span>
+                            <span className="pro-notif-item-time">{timeAgo(notif.created_at)}</span>
+                          </span>
+                          {!notif.read ? <span className="pro-notif-item-dot" /> : null}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
             <button className="pro-btn-primary" onClick={() => navigate('/pro/planning')}>
               Gerer les horaires
             </button>

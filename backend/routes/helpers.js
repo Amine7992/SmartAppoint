@@ -61,7 +61,7 @@ const mapAppointment = (appt, service, pro, client) => {
 const mapNotification = (notif) => ({
   id:         notif.id,
   message:    notif.message,
-  type:       'appointment',
+  type:       notif.type || 'appointment',
   created_at: notif.created_at,
   read:       notif.is_read || false,
 });

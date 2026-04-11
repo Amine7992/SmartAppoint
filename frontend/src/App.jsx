@@ -22,6 +22,7 @@ import ProServices from './pages/pro/ProServices.jsx';
 import ProStats from './pages/pro/ProStats.jsx';
 import ProRisks from './pages/pro/ProRisks.jsx';
 import ProProfile from './pages/pro/ProProfile.jsx';
+import ProNotifications from './pages/pro/ProNotifications.jsx';
 
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminUsers from './pages/admin/AdminUsers.jsx';
@@ -53,6 +54,7 @@ function App() {
           <Route path="/pro/services" element={<PrivateRoute roles={['professional']}><ProServices /></PrivateRoute>} />
           <Route path="/pro/stats" element={<PrivateRoute roles={['professional']}><ProStats /></PrivateRoute>} />
           <Route path="/pro/profile" element={<PrivateRoute roles={['professional']}><ProProfile /></PrivateRoute>} />
+          <Route path="/pro/notifications" element={<PrivateRoute roles={['professional']}><ProNotifications /></PrivateRoute>} />
           <Route path="/pro/risks" element={<PrivateRoute roles={['professional']}><ProRisks /></PrivateRoute>} />
 
           <Route path="/admin/dashboard" element={<PrivateRoute roles={['admin']}><AdminDashboard /></PrivateRoute>} />

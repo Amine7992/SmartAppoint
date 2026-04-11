@@ -2,6 +2,7 @@ const express  = require('express');
 const router   = express.Router();
 const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
+const { createNotification } = require('../services/notificationService');
 
 router.use(auth);
 
@@ -78,6 +79,19 @@ router.post('/:id/rating', async (req, res) => {
         console.error("Erreur mise à jour Utilisateur (Pro):", updateProError);
         // Note: On ne throw pas forcément ici pour ne pas annuler l'étape 2 si seule la moyenne échoue
     }
+
+    await Promise.all([
+      createNotification({
+        userId: req.user.id,
+        type: 'info',
+        message: 'Votre avis a bien ete enregistre. Merci pour votre retour.',
+      }),
+      createNotification({
+        userId: professional_id,
+        type: 'info',
+        message: `Vous avez recu une nouvelle note de ${rating}/5.`,
+      }),
+    ]);
 
     res.status(200).json({
       message: 'Note enregistrée avec succès.',

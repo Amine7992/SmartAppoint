@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Calendar, AlertCircle, Info } from 'lucide-react';
-import Sidebar from '../../components/common/Sidebar';
+import ProSidebar from '../../components/pro/ProSidebar';
 import api from '../../api/axios';
-import './Notifications.css';
+import '../client/Notifications.css';
 
 const iconMap = {
   appointment: <Calendar size={16} />,
@@ -25,7 +25,7 @@ const timeAgo = (dateStr) => {
   return `Il y a ${Math.floor(diff / 86400)} j`;
 };
 
-const Notifications = () => {
+const ProNotifications = () => {
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,32 +57,32 @@ const Notifications = () => {
   const unreadCount = notifs.filter((n) => !n.read).length;
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="dashboard-main">
+    <div className="pro-layout">
+      <ProSidebar />
+      <main className="pro-main">
         <header className="topbar">
           <div>
             <h1 className="page-title">Notifications</h1>
-            {unreadCount > 0 && (
+            {unreadCount > 0 ? (
               <p className="notif-count">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
-            )}
+            ) : null}
           </div>
-          {unreadCount > 0 && (
+          {unreadCount > 0 ? (
             <button className="notif-mark-all" onClick={markAllRead}>
               <CheckCheck size={15} />
               Tout marquer comme lu
             </button>
-          )}
+          ) : null}
         </header>
 
-        <section className="notif-page notif-page-client">
+        <section className="notif-page notif-page-pro">
           {loading ? (
             <p className="loading-text">Chargement...</p>
           ) : notifs.length === 0 ? (
             <div className="notif-empty">
               <Bell size={38} className="notif-empty-icon" />
               <p className="notif-empty-title">Aucune notification</p>
-              <p className="notif-empty-sub">Vous serez notifi\u00E9 ici de vos rendez-vous et mises \u00E0 jour.</p>
+              <p className="notif-empty-sub">Vous serez notifi\u00E9 ici pour les rendez-vous, annulations et nouveaux avis.</p>
             </div>
           ) : (
             <div className="notif-list">
@@ -99,7 +99,7 @@ const Notifications = () => {
                     <p className="notif-message">{n.message}</p>
                     <p className="notif-time">{timeAgo(n.created_at)}</p>
                   </div>
-                  {!n.read && <span className="notif-dot-unread" />}
+                  {!n.read ? <span className="notif-dot-unread" /> : null}
                 </div>
               ))}
             </div>
@@ -110,4 +110,4 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+export default ProNotifications;

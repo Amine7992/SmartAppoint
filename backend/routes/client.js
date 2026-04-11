@@ -3,6 +3,7 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { mapProfessional, mapService, mapAppointment } = require('./helpers');
+const { createNotification } = require('../services/notificationService');
 
 router.use(auth);
 
@@ -100,6 +101,26 @@ router.post('/appointments', async (req, res) => {
 
     const { data, error } = await supabase.from('Appointment').insert([payload]).select().single();
     if (error) throw error;
+
+    const [service] = await fetchServicesByIds([service_id]);
+    const appointmentDate = new Date(dateHeure).toLocaleString('fr-FR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+
+    await Promise.all([
+      createNotification({
+        userId: req.user.id,
+        type: 'appointment',
+        message: `Votre rendez-vous a bien ete cree pour le ${appointmentDate}.`,
+      }),
+      createNotification({
+        userId: professional_id,
+        type: 'appointment',
+        message: `Nouveau rendez-vous reserve pour ${service?.nom || 'un service'} le ${appointmentDate}.`,
+      }),
+    ]);
+
     res.status(201).json({ message: 'Rendez-vous cree', appointment: data });
   } catch (err) {
     console.error('POST /appointments error', err);
@@ -156,6 +177,48 @@ router.put('/appointments/:id', async (req, res) => {
     const [service] = await fetchServicesByIds(data.service_id ? [data.service_id] : []);
     const [professional] = await fetchUsersByIds(data.professional_id ? [data.professional_id] : []);
     const [client] = await fetchUsersByIds(data.client_id ? [data.client_id] : []);
+    const actorIsClient = appointment.client_id === req.user.id;
+    const updatedDateTime = data.date_heure
+      ? new Date(data.date_heure).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+      : null;
+
+    if (status) {
+      const normalizedStatus = String(status).toLowerCase();
+      const clientMessage = actorIsClient
+        ? `Vous avez mis a jour votre rendez-vous (${normalizedStatus}).`
+        : `Le professionnel a mis a jour votre rendez-vous (${normalizedStatus}).`;
+      const professionalMessage = actorIsClient
+        ? `Le client a mis a jour le rendez-vous (${normalizedStatus}).`
+        : `Vous avez mis a jour le rendez-vous du client (${normalizedStatus}).`;
+
+      await Promise.all([
+        createNotification({
+          userId: data.client_id,
+          type: normalizedStatus === 'cancelled' ? 'alert' : 'appointment',
+          message: clientMessage,
+        }),
+        createNotification({
+          userId: data.professional_id,
+          type: normalizedStatus === 'cancelled' ? 'alert' : 'appointment',
+          message: professionalMessage,
+        }),
+      ]);
+    }
+
+    if (date && time && updatedDateTime) {
+      await Promise.all([
+        createNotification({
+          userId: data.client_id,
+          type: 'appointment',
+          message: `Votre rendez-vous a ete reprogramme au ${updatedDateTime}.`,
+        }),
+        createNotification({
+          userId: data.professional_id,
+          type: 'appointment',
+          message: `Le rendez-vous de ${client?.nom || 'votre client'} a ete reprogramme au ${updatedDateTime}.`,
+        }),
+      ]);
+    }
 
     res.json({
       message: 'Rendez-vous mis a jour',
@@ -178,6 +241,20 @@ router.delete('/appointments/:id', async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+
+    await Promise.all([
+      createNotification({
+        userId: req.user.id,
+        type: 'alert',
+        message: 'Votre rendez-vous a ete annule.',
+      }),
+      createNotification({
+        userId: data.professional_id,
+        type: 'alert',
+        message: 'Un client a annule un rendez-vous.',
+      }),
+    ]);
+
     res.json({ message: 'Rendez-vous annule', appointment: data });
   } catch (err) {
     console.error('DELETE /appointments/:id error', err);

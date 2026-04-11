@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Users, Briefcase, BarChart2, AlertTriangle, LogOut, UserCircle2 } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, Briefcase, BarChart2, AlertTriangle, Bell, LogOut, UserCircle2 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
 import './ProSidebar.css';
@@ -35,6 +35,7 @@ const ProSidebar = () => {
       <nav className="pro-sidebar-nav">
         <NavLink to="/pro/stats" className={({ isActive }) => `pro-nav-item ${isActive ? 'active' : ''}`}><BarChart2 size={17} /><span>Statistiques</span></NavLink>
         <NavLink to="/pro/profile" className={({ isActive }) => `pro-nav-item ${isActive ? 'active' : ''}`}><UserCircle2 size={17} /><span>Mon profil</span></NavLink>
+        <NavLink to="/pro/notifications" className={({ isActive }) => `pro-nav-item ${isActive ? 'active' : ''}`}><Bell size={17} /><span>Notifications</span></NavLink>
         <NavLink to="/pro/risks" className={({ isActive }) => `pro-nav-item ${isActive ? 'active' : ''}`}><AlertTriangle size={17} /><span>IA - Risques</span></NavLink>
       </nav>
 
