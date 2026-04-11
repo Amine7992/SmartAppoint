@@ -262,4 +262,83 @@ router.delete('/appointments/:id', async (req, res) => {
   }
 });
 
+// ---------------- STRIPE ----------------
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+router.post('/appointments/:id/create-checkout-session', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: appt, error } = await supabase
+      .from('Appointment')
+      .select('*, Service(*)')
+      .eq('id', id)
+      .eq('client_id', req.user.id)
+      .single();
+
+    if (error || !appt) return res.status(404).json({ error: 'Rendez-vous introuvable' });
+    if (appt.status !== 'confirmed') return res.status(400).json({ error: 'Le rendez-vous doit etre confirme' });
+    if (appt.payment_status === 'paid') return res.status(400).json({ error: 'Deja paye' });
+
+    const price = appt.Service?.prix || 10;
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: appt.Service?.nom || 'Consultation',
+          },
+          unit_amount: Math.round(price * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `http://localhost:3000/client/payment-success?appointment_id=${id}`,
+      cancel_url: `http://localhost:3000/client/appointments`,
+      metadata: { appointment_id: id },
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe checkout error', err);
+    res.status(500).json({ error: 'Impossible de creer la session de paiement' });
+  }
+});
+
+router.post('/appointments/:id/confirm-payment', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: appt, error: fetchError } = await supabase
+      .from('Appointment')
+      .select('*')
+      .eq('id', id)
+      .eq('client_id', req.user.id)
+      .single();
+    if (fetchError) throw fetchError;
+
+    const { data, error } = await supabase
+      .from('Appointment')
+      .update({ payment_status: 'paid' })
+      .eq('id', id)
+      .eq('client_id', req.user.id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    await createNotification({
+      userId: appt.professional_id,
+      type: 'appointment',
+      message: `Un client a effectue le paiement pour son rendez-vous du ${appt.date_heure?.split('T')[0]}.`,
+    });
+
+    res.json({ message: 'Paiement confirme', appointment: data });
+  } catch (err) {
+    console.error('confirm-payment error', err);
+    res.status(500).json({ error: 'Impossible de confirmer le paiement' });
+  }
+});
+
 module.exports = router;

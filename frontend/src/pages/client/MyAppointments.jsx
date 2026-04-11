@@ -248,11 +248,26 @@ const MyAppointments = () => {
                   <div className="ma-info">
                     <p className="ma-pro-name">{appt.professional_name}</p>
                     <p className="ma-service">{appt.service}</p>
-                    <div className="ma-meta"><Clock size={13} /><span>{appt.time} � {appt.duration} min</span></div>
+                    <div className="ma-meta"><Clock size={13} /><span>{appt.time} � {appt.duration} min</span></div>
                     {appt.rated && <div className="ma-existing-rating"><StarRating value={appt.rating} readonly />{appt.comment && <p className="ma-existing-comment">"{appt.comment}"</p>}</div>}
                   </div>
                   <div className="ma-right">
                     <StatusBadge status={appt.status} />
+                    {appt.status === 'confirmed' && (
+                      <span className={`appt-badge ${appt.payment_status === 'paid' ? 'badge-confirmed' : 'badge-pending'}`}>
+                        {appt.payment_status === 'paid' ? 'Payé' : 'Non payé'}
+                      </span>
+                    )}
+                    {appt.status === 'confirmed' && appt.payment_status !== 'paid' && (
+                      <button className="ma-btn-pay" onClick={async () => {
+                        try {
+                          const res = await api.post(`/appointments/${appt.id}/create-checkout-session`);
+                          window.location.href = res.data.url;
+                        } catch (err) { console.error(err); }
+                      }}>
+                        Payer
+                      </button>
+                    )}
                     <div className="ma-actions">
                       {isCancellable(appt) && (
                         <>

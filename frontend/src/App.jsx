@@ -14,6 +14,7 @@ import MyAppointments from './pages/client/MyAppointments.jsx';
 import BookAppointment from './pages/client/BookAppointment.jsx';
 import Profile from './pages/client/Profile.jsx';
 import Notifications from './pages/client/Notifications.jsx';
+import PaymentSuccess from './pages/client/PaymentSuccess.jsx';
 
 import ProDashboard from './pages/pro/ProDashboard.jsx';
 import ProPlanning from './pages/pro/ProPlanning.jsx';
@@ -47,6 +48,7 @@ function App() {
           <Route path="/client/book" element={<PrivateRoute roles={['client']}><BookAppointment /></PrivateRoute>} />
           <Route path="/client/profile" element={<PrivateRoute roles={['client']}><Profile /></PrivateRoute>} />
           <Route path="/client/notifications" element={<PrivateRoute roles={['client']}><Notifications /></PrivateRoute>} />
+          <Route path="/client/payment-success" element={<PrivateRoute roles={['client']}><PaymentSuccess /></PrivateRoute>} />
 
           <Route path="/pro/dashboard" element={<PrivateRoute roles={['professional']}><ProDashboard /></PrivateRoute>} />
           <Route path="/pro/planning" element={<PrivateRoute roles={['professional']}><ProPlanning /></PrivateRoute>} />

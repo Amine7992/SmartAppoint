@@ -34,7 +34,6 @@ const mapService = (svc) => ({
 });
 
 const mapAppointment = (appt, service, pro, client) => {
-  // ✅ CORRIGÉ — utilise date_heure (heure réelle du RDV) et non created_at
   const { date, time } = toLocalDateTime(appt.date_heure);
   return {
     id:               appt.id,
@@ -42,6 +41,7 @@ const mapAppointment = (appt, service, pro, client) => {
     professional_id:  appt.professional_id,
     service_id:       appt.service_id,
     status:           appt.status || 'pending',
+    payment_status:   appt.payment_status || 'unpaid',
     date,
     time,
     duration:         service?.duree_minutes ?? service?.duration ?? 30,
@@ -51,10 +51,9 @@ const mapAppointment = (appt, service, pro, client) => {
     client_name:      client?.nom             || '',
     client_avatar_url: client?.avatar_url     || '',
     created_at:       appt.created_at,
-    // ✅ AJOUTÉ — champs rating nécessaires pour le bouton "Noter"
     rating:           appt.rating  ?? null,
     comment:          appt.comment ?? null,
-    rated:            appt.rating  != null,   // true si déjà noté
+    rated:            appt.rating  != null,
   };
 };
 
