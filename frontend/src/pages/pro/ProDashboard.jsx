@@ -9,7 +9,7 @@ import './ProDashboard.css';
 const EmptyTimeline = () => (
   <div className="pro-empty">
     <Clock size={30} className="pro-empty-icon" />
-    <p>Aucun rendez-vous aujourd'hui.</p>
+    <p>Aucun rendez-vous ce jour.</p>
   </div>
 );
 
@@ -47,6 +47,7 @@ const ProDashboard = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,7 +92,6 @@ const ProDashboard = () => {
         setNotifOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -113,6 +113,10 @@ const ProDashboard = () => {
   const MONTHS_FR = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
   const currentMonth = MONTHS_FR[new Date().getMonth()];
   const currentYear = new Date().getFullYear();
+
+  const now = new Date();
+  const selectedDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+  const selectedAppts = selectedDay === todayDate ? todayAppts : allAppts.filter(a => a.date === selectedDateStr);
 
   const monthlyGrowthLabel = () => {
     const pct = stats?.monthly_growth_pct;
@@ -251,7 +255,6 @@ const ProDashboard = () => {
             <p className="pro-stat-value">{stats.today ?? 0}</p>
             <p className="pro-stat-sub muted">En temps reel</p>
           </div>
-
           <div className="pro-stat-card">
             <p className="pro-stat-label">Ce mois-ci</p>
             <p className="pro-stat-value">{stats?.month ?? 0}</p>
@@ -261,13 +264,11 @@ const ProDashboard = () => {
               <p className="pro-stat-sub muted">-</p>
             )}
           </div>
-
           <div className="pro-stat-card">
             <p className="pro-stat-label">Taux d'absence</p>
             <p className="pro-stat-value">{stats.absence_rate ? `${stats.absence_rate}%` : '0%'}</p>
             <p className="pro-stat-sub orange">Analyse IA</p>
           </div>
-
           <div className="pro-stat-card">
             <p className="pro-stat-label">Note moyenne</p>
             <p className="pro-stat-value">{stats?.rating != null ? stats.rating : '-'}</p>
@@ -298,8 +299,14 @@ const ProDashboard = () => {
                 {calendarDays.map((day, i) => {
                   if (!day) return <div key={`e-${i}`} className="pro-cal-cell empty" />;
                   const isToday = day === todayDate;
+                  const isSelected = day === selectedDay;
                   return (
-                    <div key={day} className={`pro-cal-cell ${isToday ? 'today' : ''}`}>
+                    <div
+                      key={day}
+                      className={`pro-cal-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedDay(day)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <span className="day-number">{day}</span>
                       {getDayStatusDot(day)}
                     </div>
@@ -312,24 +319,29 @@ const ProDashboard = () => {
               <span className="legend-item"><span className="legend-dot available" />Disponible</span>
               <span className="legend-item"><span className="legend-dot today-dot" />Aujourd'hui</span>
               <span className="legend-item"><span className="legend-dot busy" />Charge</span>
+              {selectedDay !== todayDate && (
+                <span className="legend-item"><span className="legend-dot selected-dot" />Selectionne</span>
+              )}
             </div>
           </div>
 
           <div className="pro-panel">
             <div className="pro-panel-header">
-              <h2 className="pro-panel-title">Aujourd'hui</h2>
+              <h2 className="pro-panel-title">
+                {selectedDay === todayDate ? "Aujourd'hui" : `${selectedDay} ${currentMonth}`}
+              </h2>
               <span className="pro-rdv-count">
-                {loading ? '...' : `${todayAppts.length} RDV`}
+                {loading ? '...' : `${selectedAppts.length} RDV`}
               </span>
             </div>
 
             {loading ? (
               <p className="pro-loading">Chargement...</p>
-            ) : todayAppts.length === 0 ? (
+            ) : selectedAppts.length === 0 ? (
               <EmptyTimeline />
             ) : (
               <div className="pro-timeline">
-                {todayAppts.map((appt) => {
+                {selectedAppts.map((appt) => {
                   const hasRisk = appt.ai_score && appt.ai_score >= 0.4;
                   return (
                     <div key={appt.id} className="pro-timeline-row">

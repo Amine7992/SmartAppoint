@@ -401,6 +401,7 @@
 .pro-cal-cell {
     aspect-ratio: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     font-size: 12.5px;
@@ -414,6 +415,10 @@
     background: #e8f5f0;
 }
 
+.pro-cal-cell:hover:not(.empty) .day-number {
+    color: #1a1a2e;
+}
+
 .pro-cal-cell.empty {
     cursor: default;
 }
@@ -422,6 +427,29 @@
     background: #085041;
     color: #fff;
     font-weight: 700;
+}
+
+.pro-cal-cell.today .day-number {
+    color: #fff;
+}
+
+.pro-cal-cell.selected {
+    background: #042C53;
+    border-radius: 6px;
+}
+
+.pro-cal-cell.selected .day-number {
+    color: #fff;
+}
+
+.pro-cal-cell.today.selected {
+    background: #042C53;
+    border-color: #042C53;
+}
+
+.pro-cal-cell.selected:hover .day-number,
+.pro-cal-cell.today:hover .day-number {
+    color: #0f0e0e;
 }
 
 .pro-cal-cell.busy {
@@ -439,6 +467,7 @@
     gap: 16px;
     padding-top: 10px;
     border-top: 1px solid #f3f4f6;
+    flex-wrap: wrap;
 }
 
 .legend-item {
@@ -468,6 +497,10 @@
 .legend-dot.busy {
     background: #fef3c7;
     border: 1px solid #fcd34d;
+}
+
+.legend-dot.selected-dot {
+    background: #042C53;
 }
 
 
