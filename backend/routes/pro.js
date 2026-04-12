@@ -3,6 +3,7 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { mapService, mapAppointment } = require('./helpers');
+const { createNotification } = require('../services/notificationService');
 
 router.use(auth);
 
@@ -475,6 +476,45 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
   } catch (err) {
     console.error('GET /pro/stats/detailed error', err);
     res.status(500).json({ error: 'Impossible de recuperer les statistiques detaillees' });
+  }
+});
+
+// Mark appointment as completed
+router.put('/appointments/:id/complete', requireProfessional, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: appt, error: fetchError } = await supabase
+      .from('Appointment')
+      .select('*')
+      .eq('id', id)
+      .eq('professional_id', req.user.id)
+      .single();
+
+    if (fetchError || !appt) return res.status(404).json({ error: 'Rendez-vous introuvable' });
+    if (appt.status !== 'confirmed') return res.status(400).json({ error: 'Le rendez-vous doit etre confirme' });
+
+    const apptTime = new Date(appt.date_heure);
+    if (apptTime > new Date()) return res.status(400).json({ error: 'Le rendez-vous n\'est pas encore passe' });
+
+    const { data, error } = await supabase
+      .from('Appointment')
+      .update({ status: 'completed' })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    await createNotification({
+      userId: appt.client_id,
+      type: 'appointment',
+      message: `Votre rendez-vous du ${apptTime.toLocaleDateString('fr-FR')} a ete marque comme termine par le professionnel.`,
+    });
+
+    res.json({ message: 'Rendez-vous termine', appointment: data });
+  } catch (err) {
+    console.error('PUT /pro/appointments/:id/complete error', err);
+    res.status(500).json({ error: 'Impossible de terminer le rendez-vous' });
   }
 });
 

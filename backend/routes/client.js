@@ -50,6 +50,38 @@ router.get('/professionals/:id/services', async (req, res) => {
   }
 });
 
+// Returns taken time slots for a pro on a given date
+router.get('/professionals/:id/slots', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query;
+    if (!date) return res.status(400).json({ error: 'Date requise' });
+
+    const start = new Date(`${date}T00:00:00`).toISOString();
+    const end = new Date(`${date}T23:59:59`).toISOString();
+
+    const { data, error } = await supabase
+      .from('Appointment')
+      .select('date_heure')
+      .eq('professional_id', id)
+      .in('status', ['pending', 'confirmed'])
+      .gte('date_heure', start)
+      .lte('date_heure', end);
+
+    if (error) throw error;
+
+    const takenSlots = (data || []).map((a) => {
+      const d = new Date(a.date_heure);
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    });
+
+    res.json(takenSlots);
+  } catch (err) {
+    console.error('GET /professionals/:id/slots error', err);
+    res.status(500).json({ error: 'Impossible de recuperer les creneaux' });
+  }
+});
+
 router.get('/appointments', async (req, res) => {
   try {
     const { data: appts, error } = await supabase

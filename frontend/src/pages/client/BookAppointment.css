@@ -487,3 +487,11 @@
 .btn-back:hover {
     color: #042C53;
 }
+
+.slot-btn.taken {
+  background: #f3f4f6;
+  color: #d1d5db;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+  text-decoration: line-through;
+}

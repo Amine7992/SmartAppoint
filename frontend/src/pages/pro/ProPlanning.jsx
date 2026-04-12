@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, CheckCircle } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import api from '../../api/axios';
 import './ProPlanning.css';
@@ -22,9 +22,10 @@ const getWeekDays = (baseDate) => {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    confirmed: { label: 'Confirmé',   cls: 'badge-confirmed' },
-    pending:   { label: 'En attente', cls: 'badge-pending'   },
-    cancelled: { label: 'Annulé',     cls: 'badge-cancelled' },
+    confirmed:  { label: 'Confirmé',   cls: 'badge-confirmed' },
+    pending:    { label: 'En attente', cls: 'badge-pending'   },
+    cancelled:  { label: 'Annulé',     cls: 'badge-cancelled' },
+    completed:  { label: 'Terminé',    cls: 'badge-completed' },
   };
   const s = map[status?.toLowerCase()] || { label: status, cls: 'badge-pending' };
   return <span className={`plan-badge ${s.cls}`}>{s.label}</span>;
@@ -35,6 +36,7 @@ const ProPlanning = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const weekDays = getWeekDays(currentDate);
+  const now = new Date();
 
   useEffect(() => {
     api.get('/pro/appointments')
@@ -69,7 +71,24 @@ const ProPlanning = () => {
     } catch (err) { console.error(err); }
   };
 
+  const handleComplete = async (id) => {
+    try {
+      await api.put(`/pro/appointments/${id}/complete`);
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'completed' } : a));
+    } catch (err) { console.error(err); }
+  };
+
+  const isPast = (appt) => {
+    const apptDateTime = new Date(`${appt.date}T${appt.time}`);
+    return apptDateTime < now;
+  };
+
   const monthLabel = weekDays[0].toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+
+  // Confirmed past appointments that can be marked as completed
+  const completable = appointments.filter(a =>
+    a.status === 'confirmed' && isPast(a)
+  );
 
   return (
     <div className="pro-layout">
@@ -157,6 +176,33 @@ const ProPlanning = () => {
             </div>
           )}
         </div>
+
+        {/* Completable appointments */}
+        {completable.length > 0 && (
+          <div className="pro-panel" style={{ marginTop: 20 }}>
+            <div className="pro-panel-header">
+              <h2 className="pro-panel-title">À marquer comme terminés</h2>
+            </div>
+            <div className="plan-pending-list">
+              {completable.map(appt => (
+                <div key={appt.id} className="plan-pending-card">
+                  <div className="plan-pending-info">
+                    <p className="plan-pending-name">{appt.client_name}</p>
+                    <p className="plan-pending-detail">
+                      {new Date(appt.date).toLocaleDateString('fr-FR')} · {appt.time} · {appt.service}
+                    </p>
+                  </div>
+                  <StatusBadge status={appt.status} />
+                  <div className="plan-pending-actions">
+                    <button className="plan-btn-complete" onClick={() => handleComplete(appt.id)}>
+                      <CheckCircle size={14} /> Terminer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -9,7 +9,6 @@ import './BookAppointment.css';
 const DAYS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
-/* Génère les 14 prochains jours */
 const getNextDays = () => {
   const days = [];
   const today = new Date();
@@ -42,10 +41,10 @@ const StepIndicator = ({ current }) => (
   </div>
 );
 
-/* ─── Step num 1 : choisir un pro ─── */
+/* ─── Step 1 : choisir un pro ─── */
 const Step1 = ({ onSelect }) => {
-  const [pros, setPros]     = useState([]);
-  const [query, setQuery]   = useState('');
+  const [pros, setPros] = useState([]);
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -106,7 +105,7 @@ const Step1 = ({ onSelect }) => {
 /* ─── Step 2 : choisir un service ─── */
 const Step2 = ({ pro, onSelect, onBack }) => {
   const [services, setServices] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get(`/professionals/${pro.id}/services`)
@@ -161,6 +160,24 @@ const Step3 = ({ pro, service, onConfirm, onBack, loading }) => {
   const days = getNextDays();
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [takenSlots, setTakenSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  const handleDaySelect = async (d) => {
+    setSelectedDay(d);
+    setSelectedSlot(null);
+    setLoadingSlots(true);
+    try {
+      const dateStr = d.toISOString().split('T')[0];
+      const res = await api.get(`/professionals/${pro.id}/slots?date=${dateStr}`);
+      setTakenSlots(res.data || []);
+    } catch (err) {
+      console.error(err);
+      setTakenSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
 
   return (
     <div className="book-step">
@@ -180,7 +197,7 @@ const Step3 = ({ pro, service, onConfirm, onBack, loading }) => {
             <button
               key={i}
               className={`day-btn ${isSelected ? 'active' : ''}`}
-              onClick={() => { setSelectedDay(d); setSelectedSlot(null); }}
+              onClick={() => handleDaySelect(d)}
             >
               <span className="day-name">{DAYS_FR[d.getDay()]}</span>
               <span className="day-num">{d.getDate()}</span>
@@ -193,17 +210,26 @@ const Step3 = ({ pro, service, onConfirm, onBack, loading }) => {
       {selectedDay && (
         <>
           <h3 className="book-subtitle" style={{ marginTop: 20 }}>Choisissez un créneau</h3>
-          <div className="slots-grid">
-            {SLOTS.map(slot => (
-              <button
-                key={slot}
-                className={`slot-btn ${selectedSlot === slot ? 'active' : ''}`}
-                onClick={() => setSelectedSlot(slot)}
-              >
-                {slot}
-              </button>
-            ))}
-          </div>
+          {loadingSlots ? (
+            <p className="loading-text">Chargement des créneaux…</p>
+          ) : (
+            <div className="slots-grid">
+              {SLOTS.map(slot => {
+                const isTaken = takenSlots.includes(slot);
+                return (
+                  <button
+                    key={slot}
+                    className={`slot-btn ${selectedSlot === slot ? 'active' : ''} ${isTaken ? 'taken' : ''}`}
+                    onClick={() => !isTaken && setSelectedSlot(slot)}
+                    disabled={isTaken}
+                    title={isTaken ? 'Créneau déjà réservé' : ''}
+                  >
+                    {slot}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
 
@@ -235,10 +261,10 @@ const Step3 = ({ pro, service, onConfirm, onBack, loading }) => {
 /* ─── Main component ─── */
 const BookAppointment = () => {
   const navigate = useNavigate();
-  const [step, setStep]       = useState(1);
-  const [pro, setPro]         = useState(null);
+  const [step, setStep] = useState(1);
+  const [pro, setPro] = useState(null);
   const [service, setService] = useState(null);
-  const [saving, setSaving]   = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleConfirm = async ({ date, time }) => {
     setSaving(true);
@@ -294,6 +320,3 @@ const BookAppointment = () => {
 };
 
 export default BookAppointment;
-
-
-
