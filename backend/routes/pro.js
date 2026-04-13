@@ -448,20 +448,50 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
     if (error) throw error;
 
     const clientIds = [...new Set((appts || []).map((a) => a.client_id).filter(Boolean))];
+    const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
     const { data: clients } = await supabase.from('utilisateur').select('id').in('id', clientIds);
-    const { data: services } = await supabase.from('Service').select('nom, id').eq('professional_id', req.user.id);
+    const { data: services } = await supabase.from('Service').select('nom, id, prix').eq('professional_id', req.user.id);
+    const { data: allServices } = serviceIds.length
+      ? await supabase.from('Service').select('id, prix').in('id', serviceIds)
+      : { data: [] };
+
+    const servicesPriceMap = Object.fromEntries((allServices || []).map((s) => [s.id, s.prix || 0]));
 
     const total = (appts || []).length;
     const months = {};
+    const revenueByMonth = {};
+
     (appts || []).forEach((appt) => {
       const d = new Date(appt.date_heure);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       months[monthKey] = (months[monthKey] || 0) + 1;
+
+      if (appt.payment_status === 'paid') {
+        const price = servicesPriceMap[appt.service_id] || 0;
+        revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + price;
+      }
     });
 
     const monthly = Object.entries(months)
-      .map(([month, count]) => ({ month, count }))
-      .sort((a, b) => (a.month < b.month ? 1 : -1));
+      .map(([month, count]) => ({
+        month,
+        count,
+        revenue: revenueByMonth[month] || 0,
+      }))
+      .sort((a, b) => (a.month > b.month ? 1 : -1));
+
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+    const thisMonthRevenue = revenueByMonth[thisMonthKey] || 0;
+    const lastMonthRevenue = revenueByMonth[lastMonthKey] || 0;
+    const totalRevenue = Object.values(revenueByMonth).reduce((a, b) => a + b, 0);
+
+    const revenueGrowth = lastMonthRevenue > 0
+      ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
+      : thisMonthRevenue > 0 ? 100 : 0;
 
     const { data: proRow } = await supabase.from('utilisateur').select('rating').eq('id', req.user.id).single();
 
@@ -472,6 +502,10 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
       avg_rating: proRow?.rating || 0,
       monthly,
       services: (services || []).map((svc) => ({ name: svc.nom || '', count: 0 })),
+      total_revenue: totalRevenue,
+      this_month_revenue: thisMonthRevenue,
+      last_month_revenue: lastMonthRevenue,
+      revenue_growth: revenueGrowth,
     });
   } catch (err) {
     console.error('GET /pro/stats/detailed error', err);

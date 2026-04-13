@@ -46,3 +46,74 @@
     min-width: 28px;
     text-align: right;
 }
+
+.stats-revenue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.stats-revenue-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stats-revenue-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e8f5f0;
+  color: #085041;
+}
+
+.stats-revenue-icon.positive { background: #d1fae5; color: #065f46; }
+.stats-revenue-icon.negative { background: #fee2e2; color: #991b1b; }
+
+.stats-revenue-label {
+  font-size: 12.5px;
+  color: #6b7280;
+  margin: 0 0 4px;
+  font-weight: 500;
+}
+
+.stats-revenue-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 3px;
+  line-height: 1;
+}
+
+.stats-revenue-value.green { color: #065f46; }
+.stats-revenue-value.red { color: #991b1b; }
+
+.stats-revenue-sub {
+  font-size: 11.5px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.stats-tooltip {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.stats-tooltip-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 6px;
+}
