@@ -121,7 +121,6 @@ const Register = () => {
               value={form.role} onChange={handleChange}>
               <option value="client">Client</option>
               <option value="professional">Professionnel</option>
-              <option value="admin">Administrateur</option>
             </select>
           </div>
 
