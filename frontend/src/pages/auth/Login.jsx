@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../api/axios';
 import useAuth from '../../hooks/useAuth';
+import './Auth.css';
 
 const Login = () => {
   const { login } = useAuth();
@@ -24,64 +25,66 @@ const Login = () => {
     }
 
     setLoading(true);
-
     try {
       const res = await api.post('/auth/login', form);
       const { token, user } = res.data;
 
       if (token) {
-        console.log('Login successful:', { token: !!token, user });
         setError('');
         login(token, user);
         toast.success(`Bienvenue, ${user.nom || 'utilisateur'} !`);
-
-        // Redirection basée sur le rôle
-        if (user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (user.role === 'professional') {
-          navigate('/pro/dashboard');
-        } else {
-          navigate('/client/dashboard');
-        }
+        if (user.role === 'admin') navigate('/admin/dashboard');
+        else if (user.role === 'professional') navigate('/pro/dashboard');
+        else navigate('/client/dashboard');
       }
     } catch (err) {
       const msg = err.response?.data?.error || 'Erreur de connexion';
       setError(msg);
       toast.error(msg);
-      console.error('Erreur de connexion :', err.response?.data || err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="card shadow p-4" style={{ width: '100%', maxWidth: 420 }}>
-        <div className="text-center mb-4">
-          <h2 className="fw-bold text-primary">SmartAppoint</h2>
-          <p className="text-muted">Connectez-vous à votre compte</p>
+    <div className="auth-bg">
+      <div className="auth-card">
+        {/* ===== LOGO OPTIMISÉ ===== */}
+        <div className="auth-logo-wrap">
+          <img
+            src="/logo.png"
+            alt="SmartAppoint Logo"
+            className="auth-logo-standalone"
+          />
+          <div>
+            <h1 className="auth-brand">SmartAppoint</h1>
+            <p className="auth-tagline">Gestion intelligente de rendez-vous</p>
+          </div>
         </div>
-        
+
+        <h2 className="auth-title">Connexion</h2>
+        <p className="auth-subtitle">Connectez-vous à votre compte</p>
+
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Email</label>
+          <div className="auth-field">
+            <label className="auth-label">Email</label>
             <input
               type="email"
               name="email"
-              className="form-control"
+              className="auth-input"
               placeholder="exemple@email.com"
               value={form.email}
               onChange={handleChange}
               required
             />
           </div>
-          
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Mot de passe</label>
+
+          <div className="auth-field">
+            <label className="auth-label">Mot de passe</label>
             <input
               type="password"
               name="password"
-              className="form-control"
+              className="auth-input"
               placeholder="••••••••"
               value={form.password}
               onChange={handleChange}
@@ -89,33 +92,18 @@ const Login = () => {
             />
           </div>
 
-          {error && (
-            <div className="alert alert-danger py-2" role="alert">
-              {error}
-            </div>
-          )}
-          
-          <button
-            type="submit"
-            className="btn btn-primary w-100 py-2 mt-2"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                Connexion en cours...
-              </>
-            ) : 'Se connecter'}
+          {error && <div className="auth-error">{error}</div>}
+
+          <button type="submit" className="auth-btn" disabled={loading}>
+            {loading ? 'Connexion en cours...' : 'Se connecter'}
           </button>
         </form>
-        
-        <hr />
-        
-        <p className="text-center text-muted mb-0">
+
+        <div className="auth-divider"><span>ou</span></div>
+
+        <p className="auth-footer">
           Pas encore de compte ?{' '}
-          <Link to="/register" className="text-primary fw-semibold">
-            S'inscrire
-          </Link>
+          <Link to="/register" className="auth-link">S'inscrire</Link>
         </p>
       </div>
     </div>
