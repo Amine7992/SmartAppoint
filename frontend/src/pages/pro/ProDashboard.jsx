@@ -369,16 +369,55 @@ const ProDashboard = () => {
 
         <section className="pro-panel pro-chart-panel">
           <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>
-            RDV par semaine - {currentMonth} {currentYear}
+            RDV par semaine — {currentMonth} {currentYear}
           </h2>
-          <div className="pro-chart-empty">
-            <BarChartIcon />
-            <p>
-              {stats?.month > 0
-                ? 'Graphique disponible dans la page Statistiques.'
-                : "Les statistiques s'afficheront ici une fois les donnees disponibles."}
-            </p>
-          </div>
+          {(() => {
+            const n = new Date();
+            const yr = n.getFullYear();
+            const mo = n.getMonth();
+            const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+            const weeks = [
+              { label: 'S1', start: 1, end: 7 },
+              { label: 'S2', start: 8, end: 14 },
+              { label: 'S3', start: 15, end: 21 },
+              { label: 'S4', start: 22, end: 28 },
+              { label: 'S5', start: 29, end: daysInMonth },
+            ].filter(w => w.start <= daysInMonth);
+
+            const weekCounts = weeks.map(w => {
+              const count = allAppts.filter(a => {
+                const d = new Date(a.date);
+                return d.getFullYear() === yr && d.getMonth() === mo &&
+                  d.getDate() >= w.start && d.getDate() <= w.end;
+              }).length;
+              return { ...w, count };
+            });
+
+            const maxCount = Math.max(...weekCounts.map(w => w.count), 1);
+            const allZero = weekCounts.every(w => w.count === 0);
+
+            return allZero ? (
+              <div className="pro-chart-empty">
+                <BarChartIcon />
+                <p>Les statistiques s'afficheront ici une fois les donnees disponibles.</p>
+              </div>
+            ) : (
+              <div className="pro-week-chart">
+                {weekCounts.map((w, i) => (
+                  <div key={i} className="pro-week-col">
+                    <div className="pro-week-bar-wrap">
+                      {w.count > 0 && <span className="pro-week-count">{w.count}</span>}
+                      <div
+                        className="pro-week-bar"
+                        style={{ height: `${w.count === 0 ? 4 : Math.max((w.count / Math.max(maxCount, 10)) * 100, 8)}%`, opacity: w.count === 0 ? 0.15 : 1 }}
+                      />
+                    </div>
+                    <span className="pro-week-label">{w.label}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </section>
       </main>
     </div>
