@@ -17,11 +17,14 @@
     margin-bottom: 8px;
 }
 
-.admin-brand-name {
+
+/* ===== LOGO ADMIN AJOUTÉ ===== */
+
+.admin-sidebar-logo {
+    width: 140px;
+    height: auto;
     display: block;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
+    margin-bottom: 4px;
 }
 
 .admin-brand-sub {

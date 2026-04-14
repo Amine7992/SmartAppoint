@@ -18,8 +18,9 @@ const AdminSidebar = () => {
 
   return (
     <aside className="admin-sidebar">
+      {/* SECTION LOGO MISE À JOUR */}
       <div className="admin-sidebar-brand">
-        <span className="admin-brand-name">SmartAppoint</span>
+        <img src="/logo.png" alt="SmartAppoint" className="admin-sidebar-logo" />
         <span className="admin-brand-sub">Administration</span>
       </div>
 
