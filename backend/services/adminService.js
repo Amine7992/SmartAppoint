@@ -2,6 +2,7 @@ const supabase = require('../config/supabase');
 const { mapAppointment } = require('../routes/helpers');
 const { readAdminConfig, writeAdminConfig } = require('./adminConfigStore');
 const { getProfessionalReviewStatus, setProfessionalReviewStatus } = require('./adminProfessionalReviewStore');
+const { createNotification } = require('./notificationService');
 
 const USER_TABLE = 'utilisateur';
 const APPOINTMENT_TABLE = 'Appointment';
@@ -42,6 +43,7 @@ const formatProfessional = (user, appointmentsCount = 0) => ({
   email: user.email || '',
   avatar_url: user.avatar_url || '',
   status: toProfessionalStatus(user),
+  verified: toProfessionalStatus(user) === 'validated',
   appointments_count: appointmentsCount,
   created_at: user.created_at,
 });
@@ -212,16 +214,22 @@ const getProfessionals = async (statusFilter = null) => {
 const updateProfessionalStatus = async (id, action) => {
   let updates;
   let nextStatus;
+  let notificationMessage;
 
   if (action === 'validate') {
-    updates = { is_active: true };
+    updates = { is_active: true, validation: 'validated' };
     nextStatus = 'validated';
+    notificationMessage = 'Félicitations ! Votre compte professionnel a été approuvé et est maintenant vérifié.';
   } else if (action === 'reject') {
-    updates = { is_active: false };
+    updates = { is_active: false, validation: 'suspendu' };
     nextStatus = 'suspended';
   } else if (action === 'reactivate') {
-    updates = { is_active: true };
+    updates = { is_active: true, validation: 'validated' };
     nextStatus = 'validated';
+    notificationMessage = 'Votre compte professionnel a été réactivé et est à nouveau vérifié.';
+  } else if (action === 'unvalidate') {
+    updates = { is_active: true, validation: 'a valider' };
+    nextStatus = 'pending';
   } else {
     throw new Error('Action administrateur inconnue');
   }
@@ -232,9 +240,23 @@ const updateProfessionalStatus = async (id, action) => {
     .eq('id', id)
     .eq('role', 'professional')
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) throw new Error(`Aucun professionnel trouvé avec l'ID ${id}`);
+  
+  // Send congratulation notification on validation or reactivation
+  if (notificationMessage) {
+    try {
+      await createNotification({
+        userId: id,
+        message: notificationMessage,
+      });
+    } catch (notifError) {
+      console.warn(`Notification creation failed for professional ${id}:`, notifError);
+    }
+  }
+  
   setProfessionalReviewStatus(id, nextStatus);
   return { ...formatProfessional(data, 0), status: nextStatus };
 };
