@@ -47,6 +47,7 @@
     align-items: center;
     gap: 20px;
     transition: box-shadow 0.15s;
+    position: relative;
 }
 
 .ma-card:hover {
@@ -79,6 +80,39 @@
     height: 48px;
     background: #e9ecef;
     flex-shrink: 0;
+}
+
+
+/* ===== BOUTON FAVORIS ===== */
+
+.ma-btn-favorite {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #d1d5db;
+    /* Gris neutre par défaut */
+    margin-left: -5px;
+}
+
+.ma-btn-favorite:hover {
+    background: #fef2f2;
+    color: #ef4444;
+    transform: scale(1.1);
+}
+
+.ma-btn-favorite.active {
+    color: #ef4444;
+    /* Rouge quand activé */
+}
+
+.ma-btn-favorite:active {
+    transform: scale(0.9);
 }
 
 .ma-info {
@@ -360,11 +394,6 @@
     margin-bottom: 16px;
 }
 
-.modal-optional {
-    font-weight: 400;
-    color: #9ca3af;
-}
-
 .modal-textarea {
     width: 100%;
     padding: 10px 13px;
@@ -504,16 +533,17 @@
 }
 
 .ma-btn-pay {
-  background: #042C53;
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 5px 14px;
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-top: 6px;
+    background: #042C53;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 5px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 6px;
 }
+
 .ma-btn-pay:hover {
-  background: #063a6e;
+    background: #063a6e;
 }

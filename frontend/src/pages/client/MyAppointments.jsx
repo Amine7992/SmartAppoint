@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Clock, X, Edit2, Star, Save } from 'lucide-react';
+import { Calendar, Clock, X, Edit2, Star, Save, Heart } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import api from '../../api/axios';
 import './MyAppointments.css';
@@ -81,10 +81,8 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
           <h3 className="modal-title">Modifier le rendez-vous</h3>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
-
         <p className="modal-pro-name">{appointment.professional_name}</p>
         <p className="modal-pro-service">{appointment.service}</p>
-
         <div className="edit-days-grid">
           {days.map((day) => {
             const value = day.toISOString().split('T')[0];
@@ -96,7 +94,6 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
             );
           })}
         </div>
-
         <div className="edit-slots-grid">
           {SLOTS.map((slot) => (
             <button key={slot} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
@@ -104,9 +101,7 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
             </button>
           ))}
         </div>
-
         {error && <p className="modal-error">{error}</p>}
-
         <div className="modal-actions">
           <button className="modal-btn-cancel" onClick={onClose}>Annuler</button>
           <button className="modal-btn-submit" onClick={handleSubmit} disabled={saving}><Save size={14} />{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
@@ -210,6 +205,16 @@ const MyAppointments = () => {
     }
   };
 
+  const toggleFavorite = async (id, currentStatus) => {
+    try {
+      // On suppose un endpoint qui bascule l'état favori du professionnel associé au RDV
+      await api.patch(`/appointments/${id}/favorite`, { is_favorite: !currentStatus });
+      setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, is_favorite: !currentStatus } : a)));
+    } catch (err) {
+      console.error("Erreur lors de l'ajout aux favoris", err);
+    }
+  };
+
   const handleEditSubmit = async (date, time) => {
     const { data } = await api.put(`/appointments/${editModal.id}`, { date, time });
     setAppointments((prev) => prev.map((a) => (a.id === editModal.id ? { ...a, ...(data?.appointment || {}), date, time } : a)));
@@ -246,10 +251,20 @@ const MyAppointments = () => {
                 <div key={appt.id} className="ma-card">
                   <div className="ma-date-col"><span className="ma-day">{day}</span><span className="ma-month">{month} {year}</span></div>
                   <div className="ma-divider" />
+                  
+                  {/* Bouton Favoris ajouté à gauche du nom */}
+                  <button 
+                    className={`ma-btn-favorite ${appt.is_favorite ? 'active' : ''}`}
+                    onClick={() => toggleFavorite(appt.id, appt.is_favorite)}
+                    title={appt.is_favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  >
+                    <Heart size={18} fill={appt.is_favorite ? "#ef4444" : "none"} />
+                  </button>
+
                   <div className="ma-info">
                     <p className="ma-pro-name">{appt.professional_name}</p>
                     <p className="ma-service">{appt.service}</p>
-                    <div className="ma-meta"><Clock size={13} /><span>{appt.time} � {appt.duration} min</span></div>
+                    <div className="ma-meta"><Clock size={13} /><span>{appt.time} • {appt.duration} min</span></div>
                     {appt.rated && <div className="ma-existing-rating"><StarRating value={appt.rating} readonly />{appt.comment && <p className="ma-existing-comment">"{appt.comment}"</p>}</div>}
                   </div>
                   <div className="ma-right">
@@ -293,4 +308,3 @@ const MyAppointments = () => {
 };
 
 export default MyAppointments;
-
