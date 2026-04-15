@@ -9,13 +9,13 @@ from sklearn.utils import resample
 # 1. Chargement
 try:
     df = pd.read_csv('IAmodel.csv')
-    print(f"✅ Dataset chargé : {len(df)} lignes trouvées.")
+    print(f" Dataset chargé : {len(df)} lignes trouvées.")
 except FileNotFoundError:
-    print("❌ Erreur : 'IAmodel.csv' introuvable.")
+    print(" Erreur : 'IAmodel.csv' introuvable.")
     exit()
 
 # --- OPTIMISATION AVANCÉE ---
-print("🚀 Boost des performances (Cible 90%)...")
+print(" Boost des performances (Cible 90%)...")
 
 df = df.drop_duplicates()
 df['score_fiabilite_client'] = df['score_fiabilite_client'].fillna(df['score_fiabilite_client'].median())
@@ -51,7 +51,7 @@ model = RandomForestClassifier(
     n_jobs=-1
 )
 
-print("🧪 Entraînement haute fidélité en cours...")
+print(" Entraînement haute fidélité en cours...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 model.fit(X_train, y_train)
 
@@ -64,7 +64,7 @@ print(classification_report(y_test, y_pred))
 
 # 5. Sauvegarde
 joblib.dump(model, 'modele_prediction_paiement.pkl')
-print(f"\n💾 Modèle optimisé ({score_final:.2f}%) sauvegardé !")
+print(f"\n Modèle optimisé ({score_final:.2f}%) sauvegardé !")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # On recrée un DataFrame avec les données de test uniquement
@@ -73,4 +73,4 @@ df_test_final['cible_paiement'] = y_test
 
 # Sauvegarde dans un nouveau fichier
 df_test_final.to_csv('IAmodel_test_pfe.csv', index=False)
-print("✅ Fichier 'IAmodel_test_pfe.csv' créé. Il contient 20% de données jamais vues !")
+print(" Fichier 'IAmodel_test_pfe.csv' créé. Il contient 20% de données jamais vues !")
