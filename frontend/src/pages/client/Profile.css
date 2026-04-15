@@ -65,6 +65,17 @@
     margin: 0;
     word-break: break-all;
 }
+.profile-avatar-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.profile-verified-badge {
+    margin-bottom: 8px;
+}
 
 .profile-avatar-upload {
     margin-top: 14px;

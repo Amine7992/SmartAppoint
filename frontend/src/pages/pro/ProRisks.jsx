@@ -90,7 +90,7 @@ const ProRisks = () => {
           <div className="risk-summary-card high-card">
             <p className="risk-summary-label">Risque eleve</p>
             <p className="risk-summary-val">{high.length}</p>
-            <p className="risk-summary-sub">>= 70%</p>
+            <p className="risk-summary-sub">= 70%</p>
           </div>
           <div className="risk-summary-card medium-card">
             <p className="risk-summary-label">Risque moyen</p>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, ChevronRight, ChevronLeft, Check, MapPin, Star, Clock } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import UserAvatar from '../../components/common/UserAvatar';
+import VerificationBadge from '../../components/common/VerificationBadge';
 import api from '../../api/axios';
 import './BookAppointment.css';
 
@@ -59,6 +60,9 @@ const Step1 = ({ onSelect }) => {
     p.specialty?.toLowerCase().includes(query.toLowerCase())
   );
 
+  const isVerified = (pro) => Boolean(pro?.verified || ['validated', 'valide'].includes(String(pro?.status || pro?.validation || '').toLowerCase()));
+  const getDisplayName = (pro) => [pro?.prenom, pro?.nom].filter(Boolean).join(' ').trim() || pro?.name || '';
+
   return (
     <div className="book-step">
       <div className="book-search-bar">
@@ -81,7 +85,10 @@ const Step1 = ({ onSelect }) => {
             <div key={pro.id} className="pro-card" onClick={() => onSelect(pro)}>
               <UserAvatar user={pro} fallback="PR" className="pro-card-avatar" style={{ background: '#1a5276' }} />
               <div className="pro-card-info">
-                <p className="pro-card-name">{pro.name}</p>
+                <div className="pro-card-name-row">
+                  <p className="pro-card-name">{getDisplayName(pro)}</p>
+                  <VerificationBadge verified={isVerified(pro)} className="book-verified-badge" />
+                </div>
                 <p className="pro-card-specialty">{pro.specialty}</p>
                 {pro.city && (
                   <p className="pro-card-city">
@@ -114,12 +121,17 @@ const Step2 = ({ pro, onSelect, onBack }) => {
       .finally(() => setLoading(false));
   }, [pro.id]);
 
+  const displayName = [pro?.prenom, pro?.nom].filter(Boolean).join(' ').trim() || pro?.name || '';
+
   return (
     <div className="book-step">
       <div className="book-selected-pro">
         <UserAvatar user={pro} fallback="PR" className="pro-mini-avatar" style={{ background: '#1a5276' }} />
         <div>
-          <p className="pro-mini-name">{pro.name}</p>
+          <div className="pro-mini-name-row">
+            <p className="pro-mini-name">{displayName}</p>
+            <VerificationBadge verified={Boolean(pro?.verified || ['validated', 'valide'].includes(String(pro?.status || pro?.validation || '').toLowerCase()))} className="book-verified-badge" />
+          </div>
           <p className="pro-mini-spec">{pro.specialty}</p>
         </div>
       </div>

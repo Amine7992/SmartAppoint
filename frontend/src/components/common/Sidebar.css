@@ -18,23 +18,69 @@
     padding: 24px 20px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
 
 
 /* ===== LOGO CLIENT AJOUTÉ ===== */
 
+.sidebar-brand-mark {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    background: rgba(11, 64, 102, 0.26);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .sidebar-logo {
-    width: 140px;
-    height: auto;
+    width: 100%;
+    height: 100%;
     display: block;
-    margin-bottom: 4px;
+    object-fit: cover;
+    object-position: center center;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    mix-blend-mode: screen;
+    filter: invert(1) hue-rotate(150deg) saturate(1.45) contrast(1.35) brightness(1.18) drop-shadow(0 0 4px rgba(108, 220, 182, 0.34));
+    transform: scale(1.06);
+    transform-origin: center center;
+}
+
+.sidebar-brand-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar-brand-title {
+    color: #ffffff;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    line-height: 1;
+    text-transform: none;
+    white-space: nowrap;
 }
 
 .brand-sub {
     display: block;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.58);
     font-size: 11px;
-    margin-top: 2px;
+    margin-top: 4px;
+    text-align: center;
 }
 
 .sidebar-nav {

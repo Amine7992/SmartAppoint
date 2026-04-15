@@ -20,8 +20,13 @@ const AdminSidebar = () => {
     <aside className="admin-sidebar">
       {/* SECTION LOGO MISE À JOUR */}
       <div className="admin-sidebar-brand">
-        <img src="/logo.png" alt="SmartAppoint" className="admin-sidebar-logo" />
-        <span className="admin-brand-sub">Administration</span>
+        <div className="admin-sidebar-brand-mark">
+          <img src="/logo2.png" alt="SmartAppoint" className="admin-sidebar-logo" />
+        </div>
+        <div className="admin-sidebar-brand-copy">
+          <span className="admin-sidebar-brand-title">SmartAppoint</span>
+          <span className="admin-brand-sub">Administration</span>
+        </div>
       </div>
 
       <nav className="admin-sidebar-nav">

@@ -123,6 +123,12 @@
     border-color: #e5e7eb;
 }
 
+.notif-page-client .notif-green {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+}
+
 .notif-page-pro .notif-blue {
     background: #d1fae5;
     color: #065f46;
@@ -139,6 +145,12 @@
     background: #ecfdf5;
     color: #0f766e;
     border-color: #ccfbf1;
+}
+
+.notif-page-pro .notif-green {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
 }
 
 .notif-body {

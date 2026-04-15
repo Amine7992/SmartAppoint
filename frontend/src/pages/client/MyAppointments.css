@@ -206,6 +206,11 @@
     color: #92400e;
 }
 
+.badge-completed {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 .badge-cancelled {
     background: #fee2e2;
     color: #991b1b;

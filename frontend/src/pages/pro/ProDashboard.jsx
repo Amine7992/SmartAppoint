@@ -17,12 +17,14 @@ const notificationIcons = {
   appointment: <Calendar size={15} />,
   alert: <AlertCircle size={15} />,
   info: <Info size={15} />,
+  success: <CheckCheck size={15} />,
 };
 
 const notificationClasses = {
   appointment: 'appointment',
   alert: 'alert',
   info: 'info',
+  success: 'success',
 };
 
 const timeAgo = (dateStr) => {

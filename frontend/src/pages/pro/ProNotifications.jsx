@@ -8,12 +8,14 @@ const iconMap = {
   appointment: <Calendar size={16} />,
   alert: <AlertCircle size={16} />,
   info: <Info size={16} />,
+  success: <CheckCheck size={16} />,
 };
 
 const colorMap = {
   appointment: 'notif-blue',
   alert: 'notif-orange',
   info: 'notif-gray',
+  success: 'notif-green',
 };
 
 const timeAgo = (dateStr) => {

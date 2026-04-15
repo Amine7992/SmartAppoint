@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Users, Briefcase, Calendar, TrendingUp, Check, X, User, Clock, AlertCircle, Download } from 'lucide-react';
+import { Users, Briefcase, Calendar, TrendingUp, X, User, Clock, AlertCircle, Download } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
+import VerificationBadge from '../../components/common/VerificationBadge';
 import api from '../../api/axios';
 import './AdminDashboard.css';
 
@@ -310,7 +311,12 @@ const AdminDashboard = () => {
                 <tbody>
                   {pendingPros.map(pro => (
                     <tr key={pro.id}>
-                      <td className="admin-table-name">{pro.name}</td>
+                      <td>
+                        <div className="admin-pro-name-row">
+                          <span className="admin-table-name">{pro.name}</span>
+                          <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || '').toLowerCase()))} compact />
+                        </div>
+                      </td>
                       <td className="admin-table-muted">{pro.specialty}</td>
                       <td><StatusBadge status={pro.status} /></td>
                       <td>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Plus, Calendar, User, AlertCircle, Info, CheckCheck } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import UserAvatar from '../../components/common/UserAvatar';
+import VerificationBadge from '../../components/common/VerificationBadge';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import './Dashboard.css';
@@ -294,7 +295,10 @@ const ClientDashboard = () => {
                   <li key={pro.id} className="pro-item">
                     <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
                     <div className="pro-info">
-                      <p className="pro-name">{pro.name}</p>
+                      <div className="pro-name-row">
+                        <p className="pro-name">{[pro.prenom, pro.nom].filter(Boolean).join(' ').trim() || pro.name}</p>
+                        <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || pro.validation || '').toLowerCase()))} compact className="dashboard-verified-badge" />
+                      </div>
                       <p className="pro-meta">{pro.specialty} · {pro.city}</p>
                     </div>
                     <button

@@ -520,6 +520,17 @@
     min-width: 0;
 }
 
+.pro-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.dashboard-verified-badge {
+    background: linear-gradient(135deg, #0d5ea6 0%, #0f766e 100%);
+}
+
 .pro-name {
     font-size: 13.5px;
     font-weight: 600;

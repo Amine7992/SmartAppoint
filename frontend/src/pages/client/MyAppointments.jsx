@@ -22,6 +22,7 @@ const StatusBadge = ({ status }) => {
   const map = {
     confirmed: { label: 'Confirme', cls: 'badge-confirmed' },
     pending: { label: 'En attente', cls: 'badge-pending' },
+    completed: { label: 'Termine', cls: 'badge-completed' },
     cancelled: { label: 'Annule', cls: 'badge-cancelled' },
     past: { label: 'Passe', cls: 'badge-past' },
     no_show: { label: 'Absent', cls: 'badge-cancelled' },
@@ -132,8 +133,8 @@ const RatingModal = ({ appointment, onClose, onSubmit }) => {
         professional_id: appointment.professional_id,
       });
       onSubmit(appointment.id, rating, comment);
-    } catch {
-      setError('Erreur lors de envoi.');
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Erreur lors de envoi.');
     } finally {
       setSaving(false);
     }
@@ -194,7 +195,7 @@ const MyAppointments = () => {
   const filtered = appointments.filter((a) => {
     if (activeFilter === 'Tous') return true;
     if (activeFilter === 'A venir') return ['confirmed', 'pending'].includes(a.status?.toLowerCase());
-    if (activeFilter === 'Passes') return ['past', 'no_show'].includes(a.status?.toLowerCase());
+    if (activeFilter === 'Passes') return ['past', 'no_show', 'completed'].includes(a.status?.toLowerCase());
     if (activeFilter === 'Annules') return a.status?.toLowerCase() === 'cancelled';
     return true;
   });
@@ -221,7 +222,7 @@ const MyAppointments = () => {
   };
 
   const isCancellable = (a) => ['confirmed', 'pending'].includes(a.status?.toLowerCase());
-  const isRatable = (a) => ['past', 'no_show', 'cancelled'].includes(a.status?.toLowerCase()) && !a.rated;
+  const isRatable = (a) => ['past', 'no_show', 'cancelled', 'completed'].includes(a.status?.toLowerCase()) && !a.rated;
 
   return (
     <div className="dashboard-layout">

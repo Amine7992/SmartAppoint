@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import api from '../api/axios';
 
 export const AuthContext = createContext();
 
@@ -27,6 +28,16 @@ export const AuthProvider = ({ children }) => {
         if (decoded.exp * 1000 > Date.now()) {
           setToken(savedToken);
           setUser(normalizeUser(JSON.parse(savedUser)));
+
+          api.get('/users/profile')
+            .then(({ data }) => {
+              if (data) {
+                updateUser(data);
+              }
+            })
+            .catch(() => {
+              // Keep the cached user if the refresh endpoint is temporarily unavailable.
+            });
         } else {
           logout();
         }

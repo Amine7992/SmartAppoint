@@ -216,6 +216,12 @@
     border-color: #ccfbf1;
 }
 
+.pro-notif-item-icon.success {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+}
+
 .pro-notif-item-body {
     min-width: 0;
     flex: 1;

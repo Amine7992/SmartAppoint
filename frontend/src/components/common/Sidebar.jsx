@@ -20,8 +20,13 @@ const Sidebar = () => {
     <aside className="sidebar">
       {/* SECTION LOGO MISE À JOUR */}
       <div className="sidebar-brand">
-        <img src="/logo.png" alt="SmartAppoint" className="sidebar-logo" />
-        <span className="brand-sub">Espace client</span>
+        <div className="sidebar-brand-mark">
+          <img src="/logo2.png" alt="SmartAppoint" className="sidebar-logo" />
+        </div>
+        <div className="sidebar-brand-copy">
+          <span className="sidebar-brand-title">SmartAppoint</span>
+          <span className="brand-sub">Espace client</span>
+        </div>
       </div>
 
       <nav className="sidebar-nav">

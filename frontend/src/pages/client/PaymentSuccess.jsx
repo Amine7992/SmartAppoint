@@ -13,7 +13,7 @@ const PaymentSuccess = () => {
         .then(() => setTimeout(() => navigate('/client/appointments'), 2000))
         .catch(console.error);
     }
-  }, []);
+  }, [navigate, params]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>

@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Calendar, Users, Briefcase, BarChart2, AlertTriangle, Bell, LogOut, UserCircle2 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
+import VerificationBadge from '../common/VerificationBadge';
 import './ProSidebar.css';
 
 const ProSidebar = () => {
@@ -19,8 +20,13 @@ const ProSidebar = () => {
   return (
     <aside className="pro-sidebar">
       <div className="pro-sidebar-brand">
-        <img src="/logo.png" alt="SmartAppoint" className="pro-sidebar-logo" />
-        <span className="pro-brand-sub">Espace pro</span>
+        <div className="pro-sidebar-brand-mark">
+          <img src="/logo2.png" alt="SmartAppoint" className="pro-sidebar-logo" />
+        </div>
+        <div className="pro-sidebar-brand-copy">
+          <span className="pro-sidebar-brand-title">SmartAppoint</span>
+          <span className="pro-brand-sub">Espace pro</span>
+        </div>
       </div>
 
       <nav className="pro-sidebar-nav">
@@ -45,7 +51,10 @@ const ProSidebar = () => {
             {avatarSrc ? <img src={avatarSrc} alt={user?.name || 'Avatar'} /> : initials}
           </div>
           <div className="pro-user-info">
-            <span className="pro-user-name">{user?.name}</span>
+            <div className="pro-user-name-row">
+              <span className="pro-user-name">{user?.name}</span>
+              <VerificationBadge verified={Boolean(user?.verified || ['validated', 'valide'].includes(String(user?.validation || user?.status || '').toLowerCase()))} compact />
+            </div>
             <span className="pro-user-role">{user?.specialty}</span>
           </div>
         </div>

@@ -159,6 +159,19 @@
     flex: 1;
 }
 
+.pro-card-name-row,
+.pro-mini-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.book-verified-badge {
+    background: linear-gradient(135deg, #0d5ea6 0%, #0f766e 100%);
+    box-shadow: 0 6px 14px rgba(13, 94, 166, 0.24);
+}
+
 .pro-card-name {
     font-size: 14px;
     font-weight: 600;

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Search, Briefcase, Check, X, RefreshCw } from 'lucide-react';
+import { Search, Briefcase, Check, X, RefreshCw, BadgeCheck } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import UserAvatar from '../../components/common/UserAvatar';
 import api from '../../api/axios';
+import VerificationBadge from '../../components/common/VerificationBadge';
 import './AdminUsers.css';
 
 const FILTERS = ['Tous', 'En attente', 'Validés', 'Suspendus'];
@@ -55,6 +56,17 @@ const AdminProfessionals = () => {
     } catch (err) {
       console.error(err);
       setMessage({ type: 'error', text: err?.response?.data?.error || 'La réactivation a échoué.' });
+    }
+  };
+
+  const handleUnvalidate = async (id) => {
+    try {
+      const { data } = await api.put(`/admin/professionals/${id}/unvalidate`);
+      applyProfessionalUpdate(data);
+      setMessage({ type: 'success', text: 'Validation retirée.' });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: 'error', text: err?.response?.data?.error || 'Le retrait de validation a échoué.' });
     }
   };
 
@@ -118,7 +130,10 @@ const AdminProfessionals = () => {
                     <td>
                       <div className="au-user-cell">
                         <UserAvatar user={pro} fallback="PR" className="au-avatar" />
-                        <span className="admin-table-name">{pro.name}</span>
+                        <div className="admin-table-name-wrap">
+                          <span className="admin-table-name">{pro.name}</span>
+                          <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(pro.status?.toLowerCase()))} compact />
+                        </div>
                       </div>
                     </td>
                     <td className="admin-table-muted">{pro.specialty}</td>
@@ -134,7 +149,12 @@ const AdminProfessionals = () => {
                           </>
                         )}
                         {['validated','valide'].includes(pro.status?.toLowerCase()) && (
-                          <button className="admin-btn-reject" onClick={() => handleReject(pro.id)}><X size={13} /></button>
+                          <>
+                            <button className="admin-btn-reactivate" onClick={() => handleUnvalidate(pro.id)} title="Retirer la validation">
+                              <BadgeCheck size={13} />
+                            </button>
+                            <button className="admin-btn-reject" onClick={() => handleReject(pro.id)}><X size={13} /></button>
+                          </>
                         )}
                         {['suspended','suspendu'].includes(pro.status?.toLowerCase()) && (
                           <button className="admin-btn-reactivate" onClick={() => handleReactivate(pro.id)}><RefreshCw size={13} /></button>

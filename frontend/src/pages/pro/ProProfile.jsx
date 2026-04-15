@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Mail, Phone, Lock, Save, Briefcase } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
+import VerificationBadge from '../../components/common/VerificationBadge';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
@@ -29,6 +30,27 @@ const ProProfile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [msgInfo, setMsgInfo] = useState(null);
   const [msgPwd, setMsgPwd] = useState(null);
+  const [isVerified, setIsVerified] = useState(
+    Boolean(user?.verified || ['validated', 'valide'].includes(String(user?.validation || user?.status || '').toLowerCase()))
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    api.get('/users/profile')
+      .then(({ data }) => {
+        if (mounted && data) {
+          updateUser(data);
+          setIsVerified(Boolean(data?.verified || ['validated', 'valide'].includes(String(data?.validation || data?.status || '').toLowerCase())));
+        }
+      })
+      .catch(() => {
+        // Keep current user cache if profile refresh fails.
+      });
+    return () => {
+      mounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handlePwdChange = (e) => setPwdForm({ ...pwdForm, [e.target.name]: e.target.value });
@@ -126,7 +148,10 @@ const ProProfile = () => {
             <div className="profile-big-avatar" style={{ background: '#0f766e' }}>
               {avatarSrc ? <img src={avatarSrc} alt={user?.name || 'Avatar'} /> : initials}
             </div>
-            <p className="profile-avatar-name">{user?.name || '-'}</p>
+            <div className="profile-avatar-name-row">
+              <p className="profile-avatar-name">{user?.name || '-'}</p>
+              <VerificationBadge verified={isVerified} compact />
+            </div>
             <p className="profile-avatar-role" style={{ background: '#ccfbf1', color: '#115e59' }}>Professionnel</p>
             <p className="profile-avatar-email">{user?.email || '-'}</p>
             <label className="profile-avatar-upload">
