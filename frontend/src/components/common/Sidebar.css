@@ -25,7 +25,7 @@
 }
 
 
-/* ===== LOGO CLIENT AJOUTÉ ===== */
+/* ===== LOGO CLIENT ===== */
 
 .sidebar-brand-mark {
     width: 72px;
@@ -196,4 +196,202 @@
 
 .logout-btn:hover {
     color: #ff6b6b;
+}
+
+
+/* ===== SUPPORT BUTTON ===== */
+
+.support-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+
+
+/* ===== SUPPORT OVERLAY ===== */
+
+.support-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 20, 40, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: overlayIn 0.2s ease;
+}
+
+@keyframes overlayIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* ===== SUPPORT PANEL ===== */
+
+.support-panel {
+    position: relative;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 44px 36px 36px;
+    width: 100%;
+    max-width: 420px;
+    margin: 16px;
+    box-shadow: 0 32px 80px rgba(4, 44, 83, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+    animation: panelIn 0.28s cubic-bezier(0.34, 1.52, 0.64, 1);
+    text-align: center;
+}
+
+@keyframes panelIn {
+    from {
+        opacity: 0;
+        transform: scale(0.86) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.support-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.support-close:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+
+/* ===== SUPPORT ICON ===== */
+
+.support-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    background: #e8f0fe;
+    color: #042C53;
+    margin-bottom: 18px;
+}
+
+
+/* ===== SUPPORT TEXT ===== */
+
+.support-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #042C53;
+    margin: 0 0 10px;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+.support-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0 0 28px;
+}
+
+
+/* ===== CONTACT CARDS ===== */
+
+.support-contacts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.support-contact-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.18s, background 0.18s, transform 0.18s, box-shadow 0.18s;
+    text-align: left;
+}
+
+.support-contact-item:hover {
+    background: #eef4ff;
+    border-color: #042C53;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(4, 44, 83, 0.1);
+    text-decoration: none;
+    color: inherit;
+}
+
+.support-contact-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: #dbeafe;
+    color: #042C53;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.support-contact-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.support-contact-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    margin-bottom: 3px;
+}
+
+.support-contact-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+
+/* ===== HOURS ===== */
+
+.support-hours {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.support-hours strong {
+    color: #64748b;
 }
