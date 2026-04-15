@@ -27,11 +27,22 @@ const buildAppointmentDateTime = (date, time) => {
   return nextDateTime.toISOString();
 };
 
+const normalizeProfessionalStatus = (pro) => {
+  const validation = String(pro?.validation || '').trim().toLowerCase();
+  if (['valide', 'validé', 'validated'].includes(validation)) return 'validated';
+  if (['suspendu', 'suspended', 'rejete', 'rejeté', 'refuse', 'refusé'].includes(validation)) return 'suspended';
+  return 'pending';
+};
+
 router.get('/professionals', async (req, res) => {
   try {
     const { data, error } = await supabase.from('utilisateur').select('*').eq('role', 'professional');
     if (error) throw error;
-    res.json((data || []).map(mapProfessional));
+    res.json((data || []).map((pro) => ({
+      ...mapProfessional(pro),
+      validation: pro.validation || '',
+      status: normalizeProfessionalStatus(pro),
+    })));
   } catch (err) {
     console.error('GET /professionals error', err);
     res.status(500).json({ error: 'Impossible de recuperer les professionnels' });

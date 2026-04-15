@@ -1,3 +1,5 @@
+const { getProfessionalReviewStatus } = require('../services/adminProfessionalReviewStore');
+
 const toLocalDateTime = (timestamp) => {
   if (!timestamp) return { date: '', time: '' };
   const date = new Date(timestamp);
@@ -12,17 +14,31 @@ const toLocalDateTime = (timestamp) => {
   };
 };
 
-const mapProfessional = (pro) => ({
-  id:          pro.id,
-  name:        pro.nom        || '',
-  nom:         pro.nom        || '',
-  prenom:      pro.prenom     || '',
-  specialty:   pro.specialite || '',
-  city:        pro.city       || '',
-  rating:      pro.rating     || 0,
-  avatar_url:  pro.avatar_url || '',
-  description: pro.description || '',
-});
+const mapProfessional = (pro) => {
+  const reviewedStatus = getProfessionalReviewStatus(pro?.id);
+  const validation = String(pro?.validation || '').trim().toLowerCase();
+  const status = reviewedStatus || (
+    ['valide', 'validé', 'validated'].includes(validation)
+      ? 'validated'
+      : (['suspendu', 'suspended', 'rejete', 'rejeté', 'refuse', 'refusé'].includes(validation)
+        ? 'suspended'
+        : 'pending')
+  );
+
+  return {
+    id:          pro.id,
+    name:        pro.nom        || '',
+    nom:         pro.nom        || '',
+    prenom:      pro.prenom     || '',
+    specialty:   pro.specialite || '',
+    city:        pro.city       || '',
+    rating:      pro.rating     || 0,
+    avatar_url:  pro.avatar_url || '',
+    description: pro.description || '',
+    verified:    status === 'validated',
+    status,
+  };
+};
 
 const mapService = (svc) => ({
   id:              svc.id,

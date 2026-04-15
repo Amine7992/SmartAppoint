@@ -6,6 +6,7 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { enrichProfileWithCoordinates } = require('../API/gecorder');
+const { getProfessionalReviewStatus } = require('../services/adminProfessionalReviewStore');
 const AVATAR_BUCKET = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const STORAGE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
@@ -34,11 +35,25 @@ const getExtensionFromMimeType = (mimeType) => ({
   'image/webp': 'webp',
 }[mimeType] || null);
 
-const mapUser = (userData) => ({
-  ...userData,
-  name: [userData.prenom, userData.nom].filter(Boolean).join(' ').trim() || userData.nom || '',
-  specialty: userData.specialite || '',
-});
+const mapUser = (userData) => {
+  const reviewedStatus = userData?.role === 'professional' ? getProfessionalReviewStatus(userData?.id) : null;
+  const validation = String(userData.validation || '').trim().toLowerCase();
+  const status = reviewedStatus || (
+    ['valide', 'validé', 'validated'].includes(validation)
+      ? 'validated'
+      : (['suspendu', 'suspended', 'rejete', 'rejeté', 'refuse', 'refusé'].includes(validation)
+        ? 'suspended'
+        : 'pending')
+  );
+
+  return {
+    ...userData,
+    name: [userData.prenom, userData.nom].filter(Boolean).join(' ').trim() || userData.nom || '',
+    specialty: userData.specialite || '',
+    verified: status === 'validated',
+    status,
+  };
+};
 
 const ensureLocalAvatarDir = (userId) => {
   const userDir = path.join(LOCAL_UPLOADS_DIR, userId);
@@ -67,6 +82,17 @@ const removeLocalAvatar = (avatarUrl) => {
 };
 
 router.use(auth);
+
+router.get('/users/profile', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('utilisateur').select('*').eq('id', req.user.id).single();
+    if (error) throw error;
+    res.json(mapUser(data));
+  } catch (err) {
+    console.error('GET /users/profile error', err);
+    res.status(500).json({ error: 'Impossible de recuperer le profil utilisateur' });
+  }
+});
 
 router.put('/users/profile', async (req, res) => {
   try {

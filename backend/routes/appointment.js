@@ -14,14 +14,12 @@ router.post('/:id/rating', async (req, res) => {
   // 1. Validation de base
   if (!rating || rating < 1 || rating > 5)
     return res.status(400).json({ error: 'La note doit être comprise entre 1 et 5.' });
-  if (!professional_id)
-    return res.status(400).json({ error: 'professional_id manquant.' });
 
   try {
     // ── Étape 1 : Récupérer le RDV ──
     const { data: appt, error: apptError } = await supabase
       .from('Appointment')
-      .select('id, client_id, status, rating')
+      .select('id, client_id, professional_id, status, rating')
       .eq('id', id)
       .maybeSingle();
 
@@ -37,11 +35,17 @@ router.post('/:id/rating', async (req, res) => {
       return res.status(409).json({ error: 'Vous avez déjà noté ce rendez-vous.' });
 
     // ✅ CORRECTION ICI : Ajout de 'cancelled' dans les statuts autorisés
-    const allowedStatuses = ['past', 'no_show', 'cancelled'];
-    if (!allowedStatuses.includes(appt.status?.toLowerCase())) {
+    const allowedStatuses = ['past', 'no_show', 'cancelled', 'completed'];
+    const normalizedStatus = String(appt.status || '').trim().toLowerCase();
+    if (!allowedStatuses.includes(normalizedStatus)) {
       return res.status(400).json({ 
         error: `Ce rendez-vous (statut: ${appt.status}) ne peut pas encore être noté.` 
       });
+    }
+
+    const targetProfessionalId = appt.professional_id || professional_id;
+    if (!targetProfessionalId) {
+      return res.status(400).json({ error: 'professional_id introuvable pour ce rendez-vous.' });
     }
 
     // ── Étape 2 : Enregistrer la note ──
@@ -59,7 +63,7 @@ router.post('/:id/rating', async (req, res) => {
     const { data: ratedAppts, error: ratedError } = await supabase
       .from('Appointment')
       .select('rating')
-      .eq('professional_id', professional_id)
+      .eq('professional_id', targetProfessionalId)
       .not('rating', 'is', null);
     
     if (ratedError) throw ratedError;
@@ -73,25 +77,29 @@ router.post('/:id/rating', async (req, res) => {
     const { error: updateProError } = await supabase
       .from('utilisateur')
       .update({ rating: avg })
-      .eq('id', professional_id);
+      .eq('id', targetProfessionalId);
     
     if (updateProError) {
         console.error("Erreur mise à jour Utilisateur (Pro):", updateProError);
         // Note: On ne throw pas forcément ici pour ne pas annuler l'étape 2 si seule la moyenne échoue
     }
 
-    await Promise.all([
-      createNotification({
-        userId: req.user.id,
-        type: 'info',
-        message: 'Votre avis a bien ete enregistre. Merci pour votre retour.',
-      }),
-      createNotification({
-        userId: professional_id,
-        type: 'info',
-        message: `Vous avez recu une nouvelle note de ${rating}/5.`,
-      }),
-    ]);
+    try {
+      await Promise.all([
+        createNotification({
+          userId: req.user.id,
+          type: 'info',
+          message: 'Votre avis a bien ete enregistre. Merci pour votre retour.',
+        }),
+        createNotification({
+          userId: targetProfessionalId,
+          type: 'info',
+          message: `Vous avez recu une nouvelle note de ${rating}/5.`,
+        }),
+      ]);
+    } catch (notificationError) {
+      console.error('Notification rating warning:', notificationError);
+    }
 
     res.status(200).json({
       message: 'Note enregistrée avec succès.',
