@@ -25,14 +25,51 @@ const AdminUsers = () => {
     try {
       await api.delete(`/admin/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      const message = err?.response?.data?.error || 'Suppression impossible pour cet utilisateur';
+      console.error(err);
+      window.alert(message);
+    }
   };
 
   const handleSuspend = async (id) => {
     try {
-      await api.put(`/admin/users/${id}/suspend`);
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'suspended' } : u));
-    } catch (err) { console.error(err); }
+      const { data } = await api.put(`/admin/users/${id}/suspend`);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: data?.status || 'suspended' } : u));
+    } catch (err) {
+      const message = err?.response?.data?.error || 'Suspension impossible pour cet utilisateur';
+      console.error(err);
+      window.alert(message);
+    }
+  };
+
+  const handleUnsuspend = async (id) => {
+    try {
+      const { data } = await api.put(`/admin/users/${id}/unsuspend`);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: data?.status || 'active' } : u));
+    } catch (err) {
+      const message = String(err?.response?.data?.error || err?.message || '');
+      const isMissingRoute = message.includes('Cannot PUT') || err?.response?.status === 404;
+
+      if (!isMissingRoute) {
+        console.error(err);
+        window.alert(message || 'Annulation de suspension impossible pour cet utilisateur');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const fallbackApi = 'http://localhost:5000/api';
+        const { data } = await api.put(`${fallbackApi}/admin/users/${id}/unsuspend`, null, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: data?.status || 'active' } : u));
+      } catch (fallbackErr) {
+        console.error(fallbackErr);
+        const fallbackMessage = fallbackErr?.response?.data?.error || 'Annulation de suspension impossible pour cet utilisateur';
+        window.alert(fallbackMessage);
+      }
+    }
   };
 
   const filtered = users.filter(u => {
@@ -117,7 +154,11 @@ const AdminUsers = () => {
                     </td>
                     <td>
                       <div className="admin-table-actions">
-                        {u.status !== 'suspended' && (
+                        {u.status === 'suspended' ? (
+                          <button className="admin-btn-reactivate" title="Annuler suspension" onClick={() => handleUnsuspend(u.id)}>
+                            Annuler suspension
+                          </button>
+                        ) : (
                           <button className="admin-btn-reject" title="Suspendre" onClick={() => handleSuspend(u.id)}>
                             <ShieldOff size={13} />
                           </button>

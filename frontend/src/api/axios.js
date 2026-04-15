@@ -1,7 +1,20 @@
 import axios from 'axios';
 
+const rawApiUrl = String(process.env.REACT_APP_API_URL || '').trim();
+const defaultApiUrl = 'http://localhost:5000/api';
+
+const normalizeApiUrl = (value) => {
+    if (!value) return defaultApiUrl;
+    if (/^https?:\/\//i.test(value)) return value;
+
+    const normalizedPath = value.startsWith('/') ? value : `/${value}`;
+    return `http://localhost:5000${normalizedPath}`;
+};
+
+const resolvedApiUrl = normalizeApiUrl(rawApiUrl);
+
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+    baseURL: resolvedApiUrl,
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',

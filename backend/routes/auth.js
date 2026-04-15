@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
 const { enrichProfileWithCoordinates } = require('../API/gecorder');
+const { readAdminConfig } = require('../services/adminConfigStore');
 
 const mapUser = (userData) => ({
   ...userData,
@@ -18,6 +19,11 @@ router.post('/register', async (req, res) => {
 
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
   console.log('Register request:', { email, role, phone, ip: clientIp });
+
+  const adminConfig = readAdminConfig();
+  if (adminConfig.registration_open === false) {
+    return res.status(403).json({ error: 'Les inscriptions sont temporairement fermées.' });
+  }
 
   try {
     const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });

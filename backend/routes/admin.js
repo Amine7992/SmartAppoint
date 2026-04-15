@@ -8,6 +8,7 @@ const {
   updateProfessionalStatus,
   getAdminUsers,
   suspendUser,
+  unsuspendUser,
   deleteUser,
   getAdminAppointments,
   getAdminActivity,
@@ -62,7 +63,7 @@ router.put('/professionals/:id/validate', async (req, res) => {
     res.json(await updateProfessionalStatus(req.params.id, 'validate'));
   } catch (error) {
     console.error('PUT /api/admin/professionals/:id/validate', error);
-    res.status(500).json({ error: error?.message || 'Impossible de valider ce professionnel' });
+    res.status(error?.statusCode || 500).json({ error: error?.message || 'Impossible de valider ce professionnel' });
   }
 });
 
@@ -71,7 +72,7 @@ router.put('/professionals/:id/reject', async (req, res) => {
     res.json(await updateProfessionalStatus(req.params.id, 'reject'));
   } catch (error) {
     console.error('PUT /api/admin/professionals/:id/reject', error);
-    res.status(500).json({ error: 'Impossible de suspendre ce professionnel' });
+    res.status(error?.statusCode || 500).json({ error: error?.message || 'Impossible de suspendre ce professionnel' });
   }
 });
 
@@ -80,7 +81,7 @@ router.put('/professionals/:id/reactivate', async (req, res) => {
     res.json(await updateProfessionalStatus(req.params.id, 'reactivate'));
   } catch (error) {
     console.error('PUT /api/admin/professionals/:id/reactivate', error);
-    res.status(500).json({ error: 'Impossible de reactiver ce professionnel' });
+    res.status(error?.statusCode || 500).json({ error: error?.message || 'Impossible de reactiver ce professionnel' });
   }
 });
 
@@ -89,7 +90,7 @@ router.put('/professionals/:id/unvalidate', async (req, res) => {
     res.json(await updateProfessionalStatus(req.params.id, 'unvalidate'));
   } catch (error) {
     console.error('PUT /api/admin/professionals/:id/unvalidate', error);
-    res.status(500).json({ error: 'Impossible de retirer la validation de ce professionnel' });
+    res.status(error?.statusCode || 500).json({ error: error?.message || 'Impossible de retirer la validation de ce professionnel' });
   }
 });
 
@@ -104,10 +105,23 @@ router.get('/users', async (req, res) => {
 
 router.put('/users/:id/suspend', async (req, res) => {
   try {
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: 'Un admin ne peut pas suspendre son propre compte' });
+    }
+
     res.json(await suspendUser(req.params.id));
   } catch (error) {
     console.error('PUT /api/admin/users/:id/suspend', error);
     res.status(500).json({ error: 'Impossible de suspendre cet utilisateur' });
+  }
+});
+
+router.put('/users/:id/unsuspend', async (req, res) => {
+  try {
+    res.json(await unsuspendUser(req.params.id));
+  } catch (error) {
+    console.error('PUT /api/admin/users/:id/unsuspend', error);
+    res.status(500).json({ error: 'Impossible d annuler la suspension de cet utilisateur' });
   }
 });
 

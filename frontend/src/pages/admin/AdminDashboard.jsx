@@ -136,7 +136,7 @@ const AdminDashboard = () => {
   const handleValidate   = async (id) => {
     try {
       await api.put(`/admin/professionals/${id}/validate`);
-      setPendingPros(prev => prev.map(p => p.id === id ? { ...p, status: 'validated' } : p));
+      setPendingPros(prev => prev.filter(p => p.id !== id));
     } catch (err) { console.error(err); }
   };
 
@@ -150,7 +150,7 @@ const AdminDashboard = () => {
   const handleReactivate = async (id) => {
     try {
       await api.put(`/admin/professionals/${id}/reactivate`);
-      setPendingPros(prev => prev.map(p => p.id === id ? { ...p, status: 'validated' } : p));
+      setPendingPros(prev => prev.filter(p => p.id !== id));
     } catch (err) { console.error(err); }
   };
 

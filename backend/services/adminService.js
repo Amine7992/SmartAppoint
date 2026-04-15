@@ -11,6 +11,12 @@ const NOTIFICATION_TABLE = 'Notification';
 
 const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' });
 
+const createHttpError = (statusCode, message) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
 const escapeHtml = (value = '') =>
   String(value)
     .replace(/&/g, '&amp;')
@@ -217,21 +223,21 @@ const updateProfessionalStatus = async (id, action) => {
   let notificationMessage;
 
   if (action === 'validate') {
-    updates = { is_active: true, validation: 'validated' };
+    updates = { is_active: true };
     nextStatus = 'validated';
     notificationMessage = 'Félicitations ! Votre compte professionnel a été approuvé et est maintenant vérifié.';
   } else if (action === 'reject') {
-    updates = { is_active: false, validation: 'suspendu' };
+    updates = { is_active: false };
     nextStatus = 'suspended';
   } else if (action === 'reactivate') {
-    updates = { is_active: true, validation: 'validated' };
+    updates = { is_active: true };
     nextStatus = 'validated';
     notificationMessage = 'Votre compte professionnel a été réactivé et est à nouveau vérifié.';
   } else if (action === 'unvalidate') {
-    updates = { is_active: true, validation: 'a valider' };
+    updates = { is_active: true };
     nextStatus = 'pending';
   } else {
-    throw new Error('Action administrateur inconnue');
+    throw createHttpError(400, 'Action administrateur inconnue');
   }
 
   const { data, error } = await supabase
@@ -243,7 +249,7 @@ const updateProfessionalStatus = async (id, action) => {
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) throw new Error(`Aucun professionnel trouvé avec l'ID ${id}`);
+  if (!data) throw createHttpError(404, `Aucun professionnel trouvé avec l'ID ${id}`);
   
   // Send congratulation notification on validation or reactivation
   if (notificationMessage) {
@@ -279,10 +285,10 @@ const getAdminUsers = async () => {
     .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 };
 
-const suspendUser = async (id) => {
+const setUserSuspension = async (id, suspended) => {
   const { data, error } = await supabase
     .from(USER_TABLE)
-    .update({ is_active: false })
+    .update({ is_active: !suspended })
     .eq('id', id)
     .select('*')
     .single();
@@ -294,6 +300,10 @@ const suspendUser = async (id) => {
     status: toUserStatus(data),
   };
 };
+
+const suspendUser = async (id) => setUserSuspension(id, true);
+
+const unsuspendUser = async (id) => setUserSuspension(id, false);
 
 const deleteUser = async (id) => {
   const { error } = await supabase
@@ -415,6 +425,7 @@ module.exports = {
   updateProfessionalStatus,
   getAdminUsers,
   suspendUser,
+  unsuspendUser,
   deleteUser,
   getAdminAppointments,
   getAdminActivity,

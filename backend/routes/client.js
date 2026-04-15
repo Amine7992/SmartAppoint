@@ -4,6 +4,7 @@ const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { mapProfessional, mapService, mapAppointment } = require('./helpers');
 const { createNotification } = require('../services/notificationService');
+const { getProfessionalReviewStatus } = require('../services/adminProfessionalReviewStore');
 
 router.use(auth);
 
@@ -28,6 +29,9 @@ const buildAppointmentDateTime = (date, time) => {
 };
 
 const normalizeProfessionalStatus = (pro) => {
+  const reviewedStatus = getProfessionalReviewStatus(pro?.id);
+  if (reviewedStatus) return reviewedStatus;
+
   const validation = String(pro?.validation || '').trim().toLowerCase();
   if (['valide', 'validé', 'validated'].includes(validation)) return 'validated';
   if (['suspendu', 'suspended', 'rejete', 'rejeté', 'refuse', 'refusé'].includes(validation)) return 'suspended';
