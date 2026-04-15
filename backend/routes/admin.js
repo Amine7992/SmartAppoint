@@ -62,7 +62,7 @@ router.put('/professionals/:id/validate', async (req, res) => {
     res.json(await updateProfessionalStatus(req.params.id, 'validate'));
   } catch (error) {
     console.error('PUT /api/admin/professionals/:id/validate', error);
-    res.status(500).json({ error: 'Impossible de valider ce professionnel' });
+    res.status(500).json({ error: error?.message || 'Impossible de valider ce professionnel' });
   }
 });
 
@@ -81,6 +81,15 @@ router.put('/professionals/:id/reactivate', async (req, res) => {
   } catch (error) {
     console.error('PUT /api/admin/professionals/:id/reactivate', error);
     res.status(500).json({ error: 'Impossible de reactiver ce professionnel' });
+  }
+});
+
+router.put('/professionals/:id/unvalidate', async (req, res) => {
+  try {
+    res.json(await updateProfessionalStatus(req.params.id, 'unvalidate'));
+  } catch (error) {
+    console.error('PUT /api/admin/professionals/:id/unvalidate', error);
+    res.status(500).json({ error: 'Impossible de retirer la validation de ce professionnel' });
   }
 });
 
