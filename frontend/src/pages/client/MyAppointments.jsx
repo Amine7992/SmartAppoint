@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Clock, X, Edit2, Star, Save, Heart } from 'lucide-react';
+import { Calendar, Clock, X, Edit2, Star, Heart } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import api from '../../api/axios';
 import './MyAppointments.css';
@@ -89,16 +89,7 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
   const [selectedDay, setSelectedDay] = useState(appointment.date); // Use current appt date as default
   const [selectedTime, setSelectedTime] = useState(appointment.time);
 
-  // Helper to check if a slot is in the past
-  const isPast = (dateStr, slotStr) => {
-    const now = new Date();
-    // Create a date object for the slot (Local Time)
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const [hour, minute] = slotStr.split(':').map(Number);
-    const slotDate = new Date(year, month - 1, day, hour, minute);
-    
-    return slotDate <= now;
-  };
+
 
   return (
     <div className="ma-modal-overlay">
