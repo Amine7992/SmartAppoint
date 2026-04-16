@@ -508,3 +508,10 @@
   border-color: #e5e7eb;
   text-decoration: line-through;
 }
+
+.slot-btn.past {
+  background: #fef2f2;
+  color: #fca5a5;
+  cursor: not-allowed;
+  border-color: #fecaca;
+}

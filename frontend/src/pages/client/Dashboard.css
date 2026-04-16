@@ -588,3 +588,18 @@
         left: 0;
     }
 }
+
+.btn-unfavorite {
+  background: #fff0f0;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  padding: 5px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+.btn-unfavorite:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}

@@ -228,13 +228,20 @@ const Step3 = ({ pro, service, onConfirm, onBack, loading }) => {
             <div className="slots-grid">
               {SLOTS.map(slot => {
                 const isTaken = takenSlots.includes(slot);
+                const today = new Date();
+                const isToday = selectedDay.toDateString() === today.toDateString();
+                const [hours, minutes] = slot.split(':').map(Number);
+                const slotTime = new Date(selectedDay);
+                slotTime.setHours(hours, minutes, 0, 0);
+                const isPast = isToday && slotTime < today;
+                const isDisabled = isTaken || isPast;
                 return (
                   <button
                     key={slot}
-                    className={`slot-btn ${selectedSlot === slot ? 'active' : ''} ${isTaken ? 'taken' : ''}`}
-                    onClick={() => !isTaken && setSelectedSlot(slot)}
-                    disabled={isTaken}
-                    title={isTaken ? 'Créneau déjà réservé' : ''}
+                    className={`slot-btn ${selectedSlot === slot ? 'active' : ''} ${isTaken ? 'taken' : ''} ${isPast ? 'past' : ''}`}
+                    onClick={() => !isDisabled && setSelectedSlot(slot)}
+                    disabled={isDisabled}
+                    title={isTaken ? 'Créneau déjà réservé' : isPast ? 'Créneau passé' : ''}
                   >
                     {slot}
                   </button>

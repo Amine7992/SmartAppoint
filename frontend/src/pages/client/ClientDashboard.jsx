@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, Calendar, User, AlertCircle, Info, CheckCheck } from 'lucide-react';
+import { Bell, Plus, Calendar, User, AlertCircle, Info, CheckCheck, Heart } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import UserAvatar from '../../components/common/UserAvatar';
 import VerificationBadge from '../../components/common/VerificationBadge';
@@ -66,6 +66,7 @@ const ClientDashboard = () => {
   const [stats, setStats] = useState({ upcoming: 0, past: 0, cancelled: 0, favourites: 0 });
   const [appointments, setAppointments] = useState([]);
   const [pros, setPros] = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(true);
@@ -76,21 +77,27 @@ const ClientDashboard = () => {
       setLoading(true);
       setNotifLoading(true);
       try {
-        const [apptRes, prosRes, notifRes] = await Promise.all([
+        const [apptRes, prosRes, notifRes, favRes] = await Promise.all([
           api.get('/appointments'),
           api.get('/professionals'),
           api.get('/notifications'),
+          api.get('/favorites'),
         ]);
 
         const appts = apptRes.data || [];
+        const favList = favRes.data || [];
         setAppointments(appts.slice(0, 3));
         setStats({
           upcoming: appts.filter((appt) => ['confirmed', 'pending', 'confirme', 'en attente'].includes(appt.status?.toLowerCase())).length,
-          past: appts.filter((appt) => appt.status?.toLowerCase() === 'past').length,
+          // Option 1 – most likely (recommended)
+          past: appts.filter((appt) => 
+            ['past', 'completed', 'terminé', 'done', 'finished'].includes(appt.status?.toLowerCase())
+          ).length,
           cancelled: appts.filter((appt) => ['cancelled', 'annule'].includes(appt.status?.toLowerCase())).length,
-          favourites: 0,
+          favourites: favList.length,
         });
         setPros((prosRes.data || []).slice(0, 3));
+        setFavorites(favList.slice(0, 3));
         setNotifications(notifRes.data || []);
       } catch (err) {
         console.error(err);
@@ -109,10 +116,19 @@ const ClientDashboard = () => {
         setNotifOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleRemoveFavorite = async (proId) => {
+    try {
+      await api.delete(`/favorites/${proId}`);
+      setFavorites(prev => prev.filter(p => p.id !== proId));
+      setStats(prev => ({ ...prev, favourites: Math.max(0, prev.favourites - 1) }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const unreadNotifications = notifications.filter((notif) => !notif.read).length;
   const hasNotifications = notifications.length > 0;
@@ -307,6 +323,56 @@ const ClientDashboard = () => {
                     >
                       Reserver
                     </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        {/* Favorites widget */}
+        <section className="two-col" style={{ marginTop: 0 }}>
+          <div className="panel" style={{ gridColumn: '1 / -1' }}>
+            <div className="panel-header">
+              <h2 className="panel-title">
+                <Heart size={15} style={{ marginRight: 6, color: '#ef4444', verticalAlign: 'middle' }} />
+                Mes professionnels favoris
+              </h2>
+              <button className="link-btn" onClick={() => navigate('/client/Appointments')}>
+                Explorer
+              </button>
+            </div>
+            {loading ? (
+              <p className="loading-text">Chargement...</p>
+            ) : favorites.length === 0 ? (
+              <EmptyState icon={Heart} message="Vous n'avez pas encore de professionnels favoris. Ajoutez-en depuis vos rendez-vous." />
+            ) : (
+              <ul className="pros-list">
+                {favorites.map((pro) => (
+                  <li key={pro.id} className="pro-item">
+                    <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
+                    <div className="pro-info">
+                      <div className="pro-name-row">
+                        <p className="pro-name">{[pro.prenom, pro.nom].filter(Boolean).join(' ').trim() || pro.name}</p>
+                        <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || pro.validation || '').toLowerCase()))} compact className="dashboard-verified-badge" />
+                      </div>
+                      <p className="pro-meta">{pro.specialty} · {pro.city}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn-reserver"
+                        onClick={() => navigate(`/client/book?pro=${pro.id}`)}
+                      >
+                        Reserver
+                      </button>
+                      <button
+                        className="btn-unfavorite"
+                        onClick={() => handleRemoveFavorite(pro.id)}
+                        title="Retirer des favoris"
+                      >
+                        <Heart size={14} fill="#ef4444" color="#ef4444" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

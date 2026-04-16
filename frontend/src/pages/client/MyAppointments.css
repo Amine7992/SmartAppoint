@@ -547,3 +547,14 @@
 .ma-btn-pay:hover {
     background: #063a6e;
 }
+
+
+.edit-slot-btn.disabled {
+  background-color: #f1f1f1 !important;
+  color: #9ca3af !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  text-decoration: line-through !important;
+  pointer-events: none !important; /* Forces the button to be unclickable */
+  border-color: #e5e7eb !important;
+}

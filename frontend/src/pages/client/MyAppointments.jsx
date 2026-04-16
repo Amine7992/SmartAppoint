@@ -10,9 +10,14 @@ const SLOTS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','
 const getNextDays = () => {
   const days = [];
   const today = new Date();
+  
   for (let i = 0; i < 14; i += 1) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
+    
+    // THE FIX: Reset hours, mins, secs, and ms to zero
+    d.setHours(0, 0, 0, 0); 
+    
     days.push(d);
   }
   return days;
@@ -26,6 +31,7 @@ const StatusBadge = ({ status }) => {
     cancelled: { label: 'Annule', cls: 'badge-cancelled' },
     past: { label: 'Passe', cls: 'badge-past' },
     no_show: { label: 'Absent', cls: 'badge-cancelled' },
+    reschedule_requested: { label: 'Modif. en attente', cls: 'badge-pending'},
   };
   const s = map[status?.toLowerCase()] || { label: status, cls: 'badge-pending' };
   return <span className={`appt-badge ${s.cls}`}>{s.label}</span>;
@@ -51,60 +57,94 @@ const StarRating = ({ value, onChange, readonly = false }) => {
   );
 };
 
+const isSlotAvailable = (dayStr, slot) => {
+  if (!dayStr) return false;
+
+  const now = new Date();
+  
+  // 1. Manually build YYYY-MM-DD for TODAY (Local Time)
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${y}-${m}-${d}`;
+
+  // 2. Future days are always available
+  if (dayStr > todayStr) return true;
+  
+  // 3. Past days are never available
+  if (dayStr < todayStr) return false;
+
+  // 4. If it's TODAY, compare numbers
+  // Convert "15:30" -> 1530
+  const slotNum = parseInt(slot.replace(':', ''), 10);
+  
+  // Convert current time -> 1534
+  const currentNum = (now.getHours() * 100) + now.getMinutes();
+
+  return slotNum > currentNum;
+};
+
 const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
   const days = getNextDays();
-  const [selectedDay, setSelectedDay] = useState(appointment?.date || '');
-  const [selectedTime, setSelectedTime] = useState(appointment?.time || '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(appointment.date); // Use current appt date as default
+  const [selectedTime, setSelectedTime] = useState(appointment.time);
 
-  const handleSubmit = async () => {
-    if (!selectedDay || !selectedTime) {
-      setError('Choisissez une date et une heure.');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await onSubmit(selectedDay, selectedTime);
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Modification impossible.');
-    } finally {
-      setSaving(false);
-    }
+  // Helper to check if a slot is in the past
+  const isPast = (dateStr, slotStr) => {
+    const now = new Date();
+    // Create a date object for the slot (Local Time)
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [hour, minute] = slotStr.split(':').map(Number);
+    const slotDate = new Date(year, month - 1, day, hour, minute);
+    
+    return slotDate <= now;
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Modifier le rendez-vous</h3>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
-        </div>
-        <p className="modal-pro-name">{appointment.professional_name}</p>
-        <p className="modal-pro-service">{appointment.service}</p>
+    <div className="ma-modal-overlay">
+      <div className="ma-modal-content">
+        <h3>Modifier le rendez-vous</h3>
+        
         <div className="edit-days-grid">
-          {days.map((day) => {
-            const value = day.toISOString().split('T')[0];
-            const active = value === selectedDay;
+          {days.map((d) => {
+            const dateStr = d.toISOString().split('T')[0];
             return (
-              <button key={value} className={`edit-day-btn ${active ? 'active' : ''}`} onClick={() => setSelectedDay(value)}>
-                {day.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+              <button
+                key={dateStr}
+                className={`edit-day-btn ${selectedDay === dateStr ? 'active' : ''}`}
+                onClick={() => setSelectedDay(dateStr)}
+              >
+                {d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}
               </button>
             );
           })}
         </div>
+
         <div className="edit-slots-grid">
-          {SLOTS.map((slot) => (
-            <button key={slot} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
-              {slot}
-            </button>
-          ))}
+          {SLOTS.map((slot) => {
+            const available = isSlotAvailable(selectedDay, slot);
+            return (
+              <button
+                key={slot} type="button"
+                className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''} ${!available ? 'disabled' : ''}`}
+                onClick={() => available && setSelectedTime(slot)}
+                disabled={!available}
+                style={!available ? { opacity: 0.4, pointerEvents: 'none', textDecoration: 'line-through' } : {}}
+              >
+                {slot}
+              </button>
+            );
+          })}
         </div>
-        {error && <p className="modal-error">{error}</p>}
-        <div className="modal-actions">
-          <button className="modal-btn-cancel" onClick={onClose}>Annuler</button>
-          <button className="modal-btn-submit" onClick={handleSubmit} disabled={saving}><Save size={14} />{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
+
+        <div className="ma-modal-footer">
+          <button className="ma-btn-secondary" onClick={onClose}>Annuler</button>
+          <button 
+            className="ma-btn-primary" 
+            onClick={() => onSubmit(appointment.id, selectedDay, selectedTime)}
+          >
+            Enregistrer
+          </button>
         </div>
       </div>
     </div>
@@ -183,13 +223,22 @@ const MyAppointments = () => {
   const [ratingModal, setRatingModal] = useState(null);
   const [editModal, setEditModal] = useState(null);
 
-  useEffect(() => {
-    api.get('/appointments').then((r) => setAppointments(r.data || [])).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  const fetchAppointments = async () => {
+    try {
+      const { data } = await api.get('/appointments');
+      setAppointments(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchAppointments(); }, []);
 
   const filtered = appointments.filter((a) => {
     if (activeFilter === 'Tous') return true;
-    if (activeFilter === 'A venir') return ['confirmed', 'pending'].includes(a.status?.toLowerCase());
+    if (activeFilter === 'A venir') return ['confirmed', 'pending','reschedule_requested'].includes(a.status?.toLowerCase());
     if (activeFilter === 'Passes') return ['past', 'no_show', 'completed'].includes(a.status?.toLowerCase());
     if (activeFilter === 'Annules') return a.status?.toLowerCase() === 'cancelled';
     return true;
@@ -215,10 +264,21 @@ const MyAppointments = () => {
     }
   };
 
-  const handleEditSubmit = async (date, time) => {
-    const { data } = await api.put(`/appointments/${editModal.id}`, { date, time });
-    setAppointments((prev) => prev.map((a) => (a.id === editModal.id ? { ...a, ...(data?.appointment || {}), date, time } : a)));
-    setEditModal(null);
+  const handleEditSubmit = async (newDate, newTime) => {
+    try {
+      await api.put(`/appointments/${editModal.id}/reschedule`, { date: newDate, time: newTime });
+      
+      setAppointments(prev => prev.map(a =>
+        a.id === editModal.id 
+          ? { ...a, status: 'reschedule_requested', date: newDate, time: newTime }
+          : a
+      ));
+      
+      alert("✅ Demande de modification envoyée au professionnel.");
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.error || "Erreur lors de l'envoi");
+    }
   };
 
   const handleRatingSubmit = (apptId, rating, comment) => {
@@ -228,6 +288,7 @@ const MyAppointments = () => {
 
   const isCancellable = (a) => ['confirmed', 'pending'].includes(a.status?.toLowerCase());
   const isRatable = (a) => ['past', 'no_show', 'cancelled', 'completed'].includes(a.status?.toLowerCase()) && !a.rated;
+  const canReschedule = (appt) => appt.status?.toLowerCase() === 'confirmed';
 
   return (
     <div className="dashboard-layout">
@@ -285,9 +346,11 @@ const MyAppointments = () => {
                       </button>
                     )}
                     <div className="ma-actions">
+                      {canReschedule(appt) && (
+                        <button className="ma-btn-edit" title="Modifier" onClick={() => setEditModal(appt)}><Edit2 size={14} /></button>
+                      )}
                       {isCancellable(appt) && (
                         <>
-                          <button className="ma-btn-edit" title="Modifier" onClick={() => setEditModal(appt)}><Edit2 size={14} /></button>
                           <button className="ma-btn-cancel" title="Annuler" onClick={() => handleCancel(appt.id)}><X size={14} /></button>
                         </>
                       )}
@@ -300,6 +363,7 @@ const MyAppointments = () => {
           </div>
         )}
 
+        {editModal && <EditAppointmentModal appointment={editModal} onClose={() => setEditModal(null)} onSubmit={handleEditSubmit} />}
         {ratingModal && <RatingModal appointment={ratingModal} onClose={() => setRatingModal(null)} onSubmit={handleRatingSubmit} />}
         {editModal && <EditAppointmentModal appointment={editModal} onClose={() => setEditModal(null)} onSubmit={handleEditSubmit} />}
       </main>

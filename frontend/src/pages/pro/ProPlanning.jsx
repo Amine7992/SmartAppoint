@@ -22,10 +22,11 @@ const getWeekDays = (baseDate) => {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    confirmed:  { label: 'Confirmé',   cls: 'badge-confirmed' },
-    pending:    { label: 'En attente', cls: 'badge-pending'   },
-    cancelled:  { label: 'Annulé',     cls: 'badge-cancelled' },
-    completed:  { label: 'Terminé',    cls: 'badge-completed' },
+    confirmed:{ label: 'Confirmé',cls: 'badge-confirmed'},
+    pending:{ label: 'En attente',cls: 'badge-pending'},
+    reschedule_requested:{ label: 'Modif. demandée', cls: 'badge-pending' },
+    completed:{ label: 'Terminé',cls: 'badge-completed'},
+    cancelled:{ label: 'Annulé',cls: 'badge-cancelled'},
   };
   const s = map[status?.toLowerCase()] || { label: status, cls: 'badge-pending' };
   return <span className={`plan-badge ${s.cls}`}>{s.label}</span>;
@@ -78,6 +79,26 @@ const ProPlanning = () => {
     } catch (err) { console.error(err); }
   };
 
+    const handleAcceptReschedule = async (id) => {
+    try {
+      await api.put(`/appointments/${id}/accept-reschedule`);
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'confirmed' } : a));
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'acceptation");
+    }
+  };
+
+  const handleRejectReschedule = async (id) => {
+    try {
+      await api.put(`/appointments/${id}/reject-reschedule`);
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'confirmed' } : a));
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors du refus");
+    }
+  };
+
   const isPast = (appt) => {
     const apptDateTime = new Date(`${appt.date}T${appt.time}`);
     return apptDateTime < now;
@@ -89,6 +110,7 @@ const ProPlanning = () => {
   const completable = appointments.filter(a =>
     a.status === 'confirmed' && isPast(a)
   );
+  const rescheduleRequests = appointments.filter(a => a.status === 'reschedule_requested');
 
   return (
     <div className="pro-layout">
@@ -176,7 +198,36 @@ const ProPlanning = () => {
             </div>
           )}
         </div>
-
+                {/* === NEW: Demandes de modification === */}
+        {rescheduleRequests.length > 0 && (
+          <div className="pro-panel" style={{ marginTop: 20 }}>
+            <div className="pro-panel-header">
+              <h2 className="pro-panel-title">Demandes de modification</h2>
+            </div>
+            <div className="plan-pending-list">
+              {rescheduleRequests.map(appt => (
+                <div key={appt.id} className="plan-pending-card">
+                  <div className="plan-pending-info">
+                    <p className="plan-pending-name">{appt.client_name}</p>
+                    <p className="plan-pending-detail">
+                      Nouveau : {new Date(appt.date_heure || appt.date).toLocaleDateString('fr-FR')} 
+                      à {new Date(appt.date_heure || appt.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <StatusBadge status={appt.status} />
+                  <div className="plan-pending-actions">
+                    <button className="plan-btn-validate" onClick={() => handleAcceptReschedule(appt.id)}>
+                      <Check size={14} /> Accepter
+                    </button>
+                    <button className="plan-btn-cancel" onClick={() => handleRejectReschedule(appt.id)}>
+                      <X size={14} /> Refuser
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Completable appointments */}
         {completable.length > 0 && (
           <div className="pro-panel" style={{ marginTop: 20 }}>

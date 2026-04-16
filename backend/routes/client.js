@@ -309,6 +309,97 @@ router.delete('/appointments/:id', async (req, res) => {
   }
 });
 
+// ---------------- FAVORITES ----------------
+
+router.get('/favorites', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('Favorite')
+      .select('professional_id')
+      .eq('client_id', req.user.id);
+    if (error) throw error;
+    const proIds = (data || []).map(f => f.professional_id).filter(Boolean);
+    if (!proIds.length) return res.json([]);
+    const pros = await fetchUsersByIds(proIds);
+    res.json(pros.map(pro => ({
+      ...mapProfessional(pro),
+      validation: pro.validation || '',
+      status: normalizeProfessionalStatus(pro),
+    })));
+  } catch (err) {
+    console.error('GET /favorites error', err);
+    res.status(500).json({ error: 'Impossible de recuperer les favoris' });
+  }
+});
+
+router.post('/favorites/:professionalId', async (req, res) => {
+  try {
+    const { professionalId } = req.params;
+    const { data: existing } = await supabase
+      .from('Favorite')
+      .select('id')
+      .eq('client_id', req.user.id)
+      .eq('professional_id', professionalId)
+      .single();
+    if (existing) return res.status(409).json({ message: 'Deja en favoris' });
+    const { error } = await supabase.from('Favorite').insert([{ client_id: req.user.id, professional_id: professionalId }]);
+    if (error) throw error;
+    res.status(201).json({ message: 'Ajoute aux favoris' });
+  } catch (err) {
+    console.error('POST /favorites error', err);
+    res.status(500).json({ error: 'Impossible d\'ajouter aux favoris' });
+  }
+});
+
+router.delete('/favorites/:professionalId', async (req, res) => {
+  try {
+    const { professionalId } = req.params;
+    const { error } = await supabase
+      .from('Favorite')
+      .delete()
+      .eq('client_id', req.user.id)
+      .eq('professional_id', professionalId);
+    if (error) throw error;
+    res.json({ message: 'Retire des favoris' });
+  } catch (err) {
+    console.error('DELETE /favorites error', err);
+    res.status(500).json({ error: 'Impossible de retirer des favoris' });
+  }
+});
+
+router.patch('/appointments/:id/favorite', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_favorite } = req.body;
+    const { data: appt, error: fetchError } = await supabase
+      .from('Appointment')
+      .select('professional_id')
+      .eq('id', id)
+      .eq('client_id', req.user.id)
+      .single();
+    if (fetchError || !appt) return res.status(404).json({ error: 'Rendez-vous introuvable' });
+
+    const professionalId = appt.professional_id;
+    if (is_favorite) {
+      const { data: existing } = await supabase
+        .from('Favorite')
+        .select('id')
+        .eq('client_id', req.user.id)
+        .eq('professional_id', professionalId)
+        .single();
+      if (!existing) {
+        await supabase.from('Favorite').insert([{ client_id: req.user.id, professional_id: professionalId }]);
+      }
+    } else {
+      await supabase.from('Favorite').delete().eq('client_id', req.user.id).eq('professional_id', professionalId);
+    }
+    res.json({ message: 'Favori mis a jour', is_favorite });
+  } catch (err) {
+    console.error('PATCH /appointments/:id/favorite error', err);
+    res.status(500).json({ error: 'Impossible de mettre a jour le favori' });
+  }
+});
+
 // ---------------- STRIPE ----------------
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
