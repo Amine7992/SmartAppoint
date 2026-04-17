@@ -472,6 +472,7 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
 
     const clientIds = [...new Set((appts || []).map((a) => a.client_id).filter(Boolean))];
     const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
+    
     const { data: clients } = await supabase.from('utilisateur').select('id').in('id', clientIds);
     const { data: services } = await supabase.from('Service').select('nom, id, prix').eq('professional_id', req.user.id);
     const { data: allServices } = serviceIds.length
@@ -481,19 +482,37 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
     const servicesPriceMap = Object.fromEntries((allServices || []).map((s) => [s.id, s.prix || 0]));
 
     const total = (appts || []).length;
-    const months = {};
+    
+    // Updated to DAILY grouping
+    const dailyStats = {};
+    const months = {}; // Keeping months for the side chart
     const revenueByMonth = {};
 
     (appts || []).forEach((appt) => {
       const d = new Date(appt.date_heure);
+      const dayKey = appt.date_heure.split('T')[0]; // YYYY-MM-DD
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      
+      dailyStats[dayKey] = dailyStats[dayKey] || { count: 0, revenue: 0 };
+      dailyStats[dayKey].count += 1;
+      
       months[monthKey] = (months[monthKey] || 0) + 1;
 
       if (appt.payment_status === 'paid') {
         const price = servicesPriceMap[appt.service_id] || 0;
+        dailyStats[dayKey].revenue += price;
         revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + price;
       }
     });
+
+    const daily = Object.entries(dailyStats)
+      .map(([date, data]) => ({
+        date,
+        count: data.count,
+        revenue: data.revenue,
+      }))
+      .sort((a, b) => (a.date > b.date ? 1 : -1))
+      .slice(-30); // Return last 30 days for clarity
 
     const monthly = Object.entries(months)
       .map(([month, count]) => ({
@@ -523,8 +542,12 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
       unique_clients: (clients || []).length,
       noshow_rate: total ? Math.round(((appts || []).filter((a) => a.status === 'cancelled').length / total) * 100) : 0,
       avg_rating: proRow?.rating || 0,
+      daily,
       monthly,
-      services: (services || []).map((svc) => ({ name: svc.nom || '', count: 0 })),
+      services: (services || []).map((svc) => ({ 
+        name: svc.nom || '', 
+        count: (appts || []).filter(a => a.service_id === svc.id).length 
+      })),
       total_revenue: totalRevenue,
       this_month_revenue: thisMonthRevenue,
       last_month_revenue: lastMonthRevenue,
@@ -536,7 +559,6 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
   }
 });
 
-// Mark appointment as completed
 router.put('/appointments/:id/complete', requireProfessional, async (req, res) => {
   try {
     const { id } = req.params;

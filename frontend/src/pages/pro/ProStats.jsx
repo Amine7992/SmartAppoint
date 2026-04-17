@@ -14,18 +14,25 @@ const MONTHS_FR = {
 };
 
 const formatMonth = (key) => {
+  if (!key) return '';
   const [, m] = key.split('-');
   return MONTHS_FR[m] || key;
+};
+
+const formatDateShort = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="stats-tooltip">
-      <p className="stats-tooltip-label">{label}</p>
+      <p className="stats-tooltip-label">{formatDateShort(label) || label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color, margin: '2px 0', fontSize: 13 }}>
-          {p.name}: <strong>{p.value} {p.name === 'Revenus' ? 'DT' : 'RDV'}</strong>
+          {p.name}: <strong>{p.value.toFixed(2)} {p.name === 'Revenus' ? 'DT' : 'RDV'}</strong>
         </p>
       ))}
     </div>
@@ -43,10 +50,10 @@ const ProStats = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const chartData = stats?.monthly?.map((m) => ({
-    month: formatMonth(m.month),
-    Revenus: m.revenue || 0,
-    RDV: m.count || 0,
+  const chartData = stats?.daily?.map((d) => ({
+    date: d.date,
+    Revenus: d.revenue || 0,
+    RDV: d.count || 0,
   })) || [];
 
   const growthPositive = (stats?.revenue_growth ?? 0) >= 0;
@@ -127,9 +134,9 @@ const ProStats = () => {
               </div>
             </div>
 
-            {/* Revenue curve */}
+            {/* Revenue curve - Now DAILY */}
             <div className="pro-panel" style={{ marginTop: 20 }}>
-              <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>Revenus mensuels</h2>
+              <h2 className="pro-panel-title" style={{ marginBottom: 20 }}>Évolution des revenus (30 derniers jours)</h2>
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -139,8 +146,15 @@ const ProStats = () => {
                         <stop offset="95%" stopColor="#085041" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 11, fill: '#9ca3af' }} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tickFormatter={formatDateShort}
+                      minTickGap={30}
+                    />
                     <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} unit=" DT" />
                     <Tooltip content={<CustomTooltip />} />
                     <Area
@@ -149,8 +163,8 @@ const ProStats = () => {
                       stroke="#085041"
                       strokeWidth={2.5}
                       fill="url(#revenueGradient)"
-                      dot={{ fill: '#085041', r: 4 }}
-                      activeDot={{ r: 6 }}
+                      dot={false}
+                      activeDot={{ r: 6, strokeWidth: 0, fill: '#085041' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -165,7 +179,7 @@ const ProStats = () => {
                 <h2 className="pro-panel-title" style={{ marginBottom: 16 }}>RDV par mois</h2>
                 {stats.monthly && stats.monthly.length > 0 ? (
                   <div className="stats-bar-chart">
-                    {stats.monthly.map((m, i) => (
+                    {stats.monthly.slice(-6).map((m, i) => (
                       <div key={i} className="stats-bar-row">
                         <span className="stats-bar-label">{formatMonth(m.month)}</span>
                         <div className="stats-bar-track">
@@ -187,7 +201,7 @@ const ProStats = () => {
                 <h2 className="pro-panel-title" style={{ marginBottom: 16 }}>Répartition des services</h2>
                 {stats.services && stats.services.filter(s => s.count > 0).length > 0 ? (
                   <div className="stats-service-list">
-                    {stats.services.filter(s => s.count > 0).map((s, i) => (
+                    {stats.services.filter(s => s.count > 0).sort((a,b) => b.count - a.count).map((s, i) => (
                       <div key={i} className="stats-service-row">
                         <span className="stats-service-name">{s.name}</span>
                         <div className="stats-bar-track">
