@@ -123,10 +123,27 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
             </button>
           ))}
         </div>
-        {error && <p className="modal-error">{error}</p>}
-        <div className="modal-actions">
-          <button className="modal-btn-cancel" onClick={onClose}>Annuler</button>
-          <button className="modal-btn-submit" onClick={handleSubmit} disabled={saving}><Save size={14} />{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
+
+        <div className="ma-modal-footer">
+          <button className="ma-btn-secondary" onClick={onClose}>Annuler</button>
+          <button 
+            className="ma-btn-primary" 
+            onClick={() => {
+              if (!selectedDay || !selectedTime) {
+                alert('Veuillez sélectionner une date et une heure.');
+                return;
+              }
+              const selectedDateTime = new Date(`${selectedDay}T${selectedTime}`);
+              const now = new Date();
+              if (selectedDateTime <= now) {
+                alert('Veuillez sélectionner une date et une heure dans le futur.');
+                return;
+              }
+              onSubmit(selectedDay, selectedTime);
+            }}
+          >
+            Enregistrer
+          </button>
         </div>
       </div>
     </div>
@@ -237,10 +254,22 @@ const MyAppointments = () => {
     }
   };
 
-  const handleEditSubmit = async (date, time) => {
-    const { data } = await api.put(`/appointments/${editModal.id}`, { date, time });
-    setAppointments((prev) => prev.map((a) => (a.id === editModal.id ? { ...a, ...(data?.appointment || {}), date, time } : a)));
-    setEditModal(null);
+  const handleEditSubmit = async (newDate, newTime) => {
+    try {
+      await api.put(`/appointments/${editModal.id}/reschedule`, { date: newDate, time: newTime });
+      
+      setAppointments(prev => prev.map(a =>
+        a.id === editModal.id 
+          ? { ...a, status: 'reschedule_requested', date: newDate, time: newTime }
+          : a
+      ));
+      
+      alert("✅ Demande de modification envoyée au professionnel.");
+      setEditModal(null);
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.error || "Erreur lors de l'envoi");
+    }
   };
 
   const handleRatingSubmit = (apptId, rating, comment) => {
@@ -323,7 +352,6 @@ const MyAppointments = () => {
         )}
 
         {ratingModal && <RatingModal appointment={ratingModal} onClose={() => setRatingModal(null)} onSubmit={handleRatingSubmit} />}
-        {editModal && <EditAppointmentModal appointment={editModal} onClose={() => setEditModal(null)} onSubmit={handleEditSubmit} />}
       </main>
     </div>
   );
