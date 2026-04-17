@@ -10,6 +10,102 @@ const SERVICE_TABLE = 'Service';
 const NOTIFICATION_TABLE = 'Notification';
 
 const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' });
+/**
+ * Exact Tiered Tax Calculation logic
+ */
+
+const calculateTieredTax = (revenue) => {
+  let rate = 0;
+  let label = '0%';
+
+  if (revenue > 2000) { rate = 0.09; label = '9%'; }
+  else if (revenue > 1000) { rate = 0.07; label = '7%'; }
+  else if (revenue > 500) { rate = 0.05; label = '5%'; }
+  else if (revenue > 100) { rate = 0.02; label = '2%'; }
+  else { rate = 0.00; label = '0%'; }
+
+  const taxAmount = revenue * rate;
+
+  return {
+    taxAmount: Number(taxAmount.toFixed(2)),
+    rateLabel: label,
+    rateValue: rate,
+    netRevenue: Number((revenue - taxAmount).toFixed(2)),
+    // nextThreshold removed because it was never defined
+  };
+};
+
+const getDetailedStats = async () => {
+  const [
+    { data: users },
+    { data: appts },
+    { data: services }
+  ] = await Promise.all([
+    supabase.from(USER_TABLE).select('id, role, created_at, nom, prenom'),
+    supabase.from(APPOINTMENT_TABLE).select('id, professional_id, service_id, status, payment_status, date_heure'),
+    supabase.from(SERVICE_TABLE).select('id, prix')
+  ]);
+
+  const priceMap = {};
+  services?.forEach(s => priceMap[s.id] = s.prix || 0);
+
+  // Flexible filter for revenue appointments
+  const revenueAppts = appts?.filter(a => {
+    const status = String(a.status || '').toLowerCase();
+    const payment = String(a.payment_status || '').toLowerCase();
+    return payment === 'paid' || status === 'completed' || status === 'paid';
+  }) || [];
+
+  let total_volume = 0;
+  const proRevenue = {};
+
+  revenueAppts.forEach(appt => {
+    const price = priceMap[appt.service_id] || 0;
+    total_volume += price;
+    proRevenue[appt.professional_id] = (proRevenue[appt.professional_id] || 0) + price;
+  });
+
+  // Daily revenue curve (last 30 days)
+  const dailyRevenueMap = {};
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  revenueAppts.forEach(appt => {
+    if (!appt.date_heure) return;
+    const date = new Date(appt.date_heure);
+    if (date < thirtyDaysAgo) return;
+
+    const dateStr = date.toISOString().split('T')[0];
+    dailyRevenueMap[dateStr] = (dailyRevenueMap[dateStr] || 0) + (priceMap[appt.service_id] || 0);
+  });
+
+  const daily_revenue_curve = Object.entries(dailyRevenueMap)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, revenue]) => ({ date, revenue: Number(revenue.toFixed(2)) }));
+
+  // PRO taxation breakdown
+  const pro_taxation_breakdown = users
+    ?.filter(u => u.role === 'professional')
+    .map(pro => {
+      const rev = proRevenue[pro.id] || 0;
+      return {
+        id: pro.id,
+        name: `${pro.prenom || ''} ${pro.nom || ''}`.trim() || 'Professionnel inconnu',
+        totalRevenue: Number(rev.toFixed(2)),
+        ...calculateTieredTax(rev)
+      };
+    }) || [];
+
+  const total_tax_collected = pro_taxation_breakdown.reduce((acc, curr) => acc + curr.taxAmount, 0);
+
+  return {
+    total_volume: Number(total_volume.toFixed(2)),
+    total_tax_collected: Number(total_tax_collected.toFixed(2)),
+    pro_taxation_breakdown,
+    daily_revenue_curve,
+    total_users: users?.length || 0,
+  };
+};
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -188,18 +284,6 @@ const groupCountByMonth = (rows = [], dateField) => {
         count,
       };
     });
-};
-
-const getDetailedStats = async () => {
-  const [users, appointments] = await Promise.all([
-    fetchUsers(),
-    fetchAppointments(),
-  ]);
-
-  return {
-    monthly: groupCountByMonth(appointments, 'date_heure'),
-    registrations: groupCountByMonth(users, 'created_at'),
-  };
 };
 
 const getProfessionals = async (statusFilter = null) => {
@@ -432,4 +516,5 @@ module.exports = {
   getAdminConfig,
   saveAdminConfig,
   buildAdminReportData,
+  calculateTieredTax,
 };

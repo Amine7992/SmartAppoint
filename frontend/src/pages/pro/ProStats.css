@@ -117,3 +117,21 @@
   color: #6b7280;
   margin: 0 0 6px;
 }
+
+.financial-card { margin-top: 24px; border: 1px solid #e5e7eb; }
+.financial-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.financial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+.fin-item { display: flex; flex-direction: column; gap: 4px; }
+.fin-label { font-size: 0.85rem; color: #6b7280; }
+.fin-value { font-size: 1.25rem; font-weight: 700; color: #111827; }
+.fin-item.highlight { background: #f0fdf4; padding: 10px; border-radius: 8px; }
+
+.tax-progress-container { margin-top: 15px; background: #f9fafb; padding: 15px; border-radius: 8px; }
+.tax-progress-text { display: flex; justify-content: space-between; font-size: 0.8rem; color: #4b5563; margin-bottom: 8px; }
+.tax-progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.tax-progress-fill { height: 100%; background: #26215C; border-radius: 4px; transition: width 0.5s ease; }
+
+.tax-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.tier-0 { background: #f3f4f6; color: #374151; }
+.tier-2 { background: #dcfce7; color: #166534; }
+/* ... existing tier colors from admin ... */

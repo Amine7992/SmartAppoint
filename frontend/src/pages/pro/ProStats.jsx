@@ -219,7 +219,48 @@ const ProStats = () => {
                 )}
               </div>
             </div>
-          </>
+            
+            {stats.financials && (
+            <div className="pro-panel financial-card">
+              <div className="financial-header">
+                <h2 className="pro-panel-title">Récapitulatif Fiscal - {stats.financials.monthLabel}</h2>
+                <span className={`tax-badge tier-${stats.financials.rateLabel.replace('%','')}`}>
+                  Palier actuel : {stats.financials.rateLabel}
+                </span>
+              </div>
+
+              <div className="financial-grid">
+                <div className="fin-item">
+                  <span className="fin-label">Revenu Brut</span>
+                  <span className="fin-value">{stats.financials.monthlyGross.toFixed(2)} DT</span>
+                </div>
+              <div className="fin-item">
+                <span className="fin-label">Taxe Plateforme ({stats.financials.rateLabel})</span>
+                <span className="fin-value text-red">-{stats.financials.taxAmount.toFixed(2)} DT</span>
+              </div>
+              <div className="fin-item highlight">
+                <span className="fin-label">Revenu Net</span>
+                <span className="fin-value text-green">{stats.financials.netRevenue.toFixed(2)} DT</span>
+              </div>
+            </div>
+
+            {stats.financials.nextThreshold && (
+              <div className="tax-progress-container">
+                <div className="tax-progress-text">
+                  <span>Prochain palier à {stats.financials.nextThreshold} DT</span>
+                  <span>{Math.max(0, stats.financials.nextThreshold - stats.financials.monthlyGross).toFixed(2)} DT restant</span>
+                </div>
+                <div className="tax-progress-bar">
+                  <div 
+                    className="tax-progress-fill" 
+                    style={{ width: `${Math.min(100, (stats.financials.monthlyGross / stats.financials.nextThreshold) * 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        </>
         )}
       </main>
     </div>
