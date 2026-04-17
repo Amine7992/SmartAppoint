@@ -216,7 +216,7 @@ router.put('/:id/reject-reschedule', async (req, res) => {
   try {
     const { data: appt, error: fetchError } = await supabase
       .from('Appointment')
-      .select('id, professional_id, status, date, time') // We can keep old date/time if needed
+      .select('id, professional_id, status, date_heure')
       .eq('id', id)
       .single();
 
@@ -224,9 +224,14 @@ router.put('/:id/reject-reschedule', async (req, res) => {
     if (appt.professional_id !== req.user.id) return res.status(403).json({ error: 'Accès refusé.' });
     if (appt.status !== 'reschedule_requested') return res.status(400).json({ error: 'Aucune demande de modification en cours.' });
 
+    // Extract the original date_heure before reschedule
+    // Since we don't store the old date separately, we need to assume it's the current one minus the reschedule
+    // But actually, since reschedule updates date_heure, and reject should revert, but we don't have the old value
+    // For now, we'll keep the new date_heure as per current code, but this is a limitation
+
     const { error: updateError } = await supabase
       .from('Appointment')
-      .update({ status: 'confirmed' })   // Keep old date/time
+      .update({ status: 'confirmed' })   // Keep the new date_heure for now
       .eq('id', id);
 
     if (updateError) throw updateError;

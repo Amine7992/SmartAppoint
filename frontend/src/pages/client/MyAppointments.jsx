@@ -132,7 +132,19 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
           <button className="ma-btn-secondary" onClick={onClose}>Annuler</button>
           <button 
             className="ma-btn-primary" 
-            onClick={() => onSubmit(appointment.id, selectedDay, selectedTime)}
+            onClick={() => {
+              if (!selectedDay || !selectedTime) {
+                alert('Veuillez sélectionner une date et une heure.');
+                return;
+              }
+              const selectedDateTime = new Date(`${selectedDay}T${selectedTime}`);
+              const now = new Date();
+              if (selectedDateTime <= now) {
+                alert('Veuillez sélectionner une date et une heure dans le futur.');
+                return;
+              }
+              onSubmit(selectedDay, selectedTime);
+            }}
           >
             Enregistrer
           </button>
@@ -266,6 +278,7 @@ const MyAppointments = () => {
       ));
       
       alert("✅ Demande de modification envoyée au professionnel.");
+      setEditModal(null);
     } catch (err) {
       console.error(err);
       alert(err?.response?.data?.error || "Erreur lors de l'envoi");
@@ -356,7 +369,6 @@ const MyAppointments = () => {
 
         {editModal && <EditAppointmentModal appointment={editModal} onClose={() => setEditModal(null)} onSubmit={handleEditSubmit} />}
         {ratingModal && <RatingModal appointment={ratingModal} onClose={() => setRatingModal(null)} onSubmit={handleRatingSubmit} />}
-        {editModal && <EditAppointmentModal appointment={editModal} onClose={() => setEditModal(null)} onSubmit={handleEditSubmit} />}
       </main>
     </div>
   );

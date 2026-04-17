@@ -4,6 +4,7 @@ const cors    = require('cors');
 const helmet  = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path    = require('path');
+const cron    = require('node-cron');
 
 const authRoutes              = require('./routes/auth');
 const clientRoutes            = require('./routes/client');
@@ -12,6 +13,9 @@ const notificationsRoutes     = require('./routes/notifications');
 const userRoutes              = require('./routes/users');
 const appointmentRatingRouter = require('./routes/appointment');
 const adminRoutes             = require('./routes/admin'); // 1. Importer les routes admin
+
+const supabase = require('./config/supabase');
+const { cancelExpiredAppointments } = require('./services/appointmentService');
 
 const app = express();
 const allowedOrigins = String(process.env.CORS_ORIGIN || '')
@@ -109,8 +113,18 @@ app.use((err, req, res, next) => {
   next();
 });
 
+// Schedule job to cancel expired appointments every 10 minutes
+cron.schedule('*/10 * * * *', () => {
+  console.log('CRON JOB: Running scheduled task: checking for expired appointments');
+  cancelExpiredAppointments();
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(` Serveur SmartAppoint opérationnel sur le port ${PORT}`);
   console.log(`  Module Admin activé sur /api/admin`);
+
+  // Run initial check for expired appointments on server start
+  console.log('Running initial check for expired appointments');
+  await cancelExpiredAppointments();
 });
