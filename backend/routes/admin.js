@@ -1,6 +1,7 @@
 const express = require('express');
 const { auth } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
+const supabase = require('../config/supabase');
 const {
   getAdminStats,
   getDetailedStats,
@@ -33,10 +34,75 @@ router.get('/stats', async (req, res) => {
 
 router.get('/stats/detailed', async (req, res) => {
   try {
-    res.json(await getDetailedStats());
+    // 1. Get base stats from service
+    const baseStats = await getDetailedStats();
+
+    // 2. Calculate Admin Revenue and Taxation
+    const { data: appts, error } = await supabase
+      .from('Appointment')
+      .select('service_id, payment_status, created_at, date_heure')
+      .eq('payment_status', 'paid');
+
+    if (error) throw error;
+
+    // Fetch config for taxation (default 10% if not set)
+    const config = await getAdminConfig();
+    const taxRate = (config.commission_rate || 10) / 100;
+
+    const { data: services } = await supabase.from('Service').select('id, prix');
+    const priceMap = Object.fromEntries((services || []).map(s => [s.id, s.prix || 0]));
+
+    const revenueByMonth = {};
+    let totalPlatformRevenue = 0;
+
+    appts.forEach(appt => {
+      const d = new Date(appt.date_heure);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      
+      const price = priceMap[appt.service_id] || 0;
+      const taxAmount = price * taxRate;
+
+      revenueByMonth[monthKey] = revenueByMonth[monthKey] || { total: 0, tax: 0 };
+      revenueByMonth[monthKey].total += price;
+      revenueByMonth[monthKey].tax += taxAmount;
+      totalPlatformRevenue += taxAmount;
+    });
+
+    const revenueStats = Object.entries(revenueByMonth).map(([month, data]) => ({
+      month,
+      revenue: data.total,
+      commission: data.tax
+    })).sort((a, b) => a.month > b.month ? 1 : -1);
+
+    res.json({
+      ...baseStats,
+      revenue_history: revenueStats,
+      total_platform_commission: totalPlatformRevenue,
+      tax_rate_percent: taxRate * 100
+    });
   } catch (error) {
     console.error('GET /api/admin/stats/detailed', error);
-    res.status(500).json({ error: 'Impossible de recuperer les statistiques detaillees' });
+    res.status(200).json({
+      total_volume: 0,
+      total_tax_collected: 0,
+      pro_taxation_breakdown: [],
+      daily_revenue_curve: []
+    });
+  }
+});
+
+// POST /api/admin/notify-tax
+// Triggered by Admin to send monthly summaries to all PROs
+router.post('/notify-tax', async (req, res) => {
+  try {
+    const result = await notifyAllProsOfTax();
+    res.json({ 
+      message: `Notifications envoyées avec succès à ${result.notifiedCount} professionnels.`,
+      count: result.notifiedCount 
+    });
+  } catch (error) {
+    console.error('Error sending tax notifications:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'envoi des notifications' });
   }
 });
 

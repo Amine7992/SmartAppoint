@@ -4,10 +4,7 @@ const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { mapService, mapAppointment } = require('./helpers');
 const { createNotification } = require('../services/notificationService');
-const {
-  getProfessionalSchedule,
-  updateProfessionalSchedule,
-} = require('../services/proScheduleStore');
+const { calculateTieredTax } = require('../services/adminService');
 
 router.use(auth);
 
@@ -464,95 +461,147 @@ router.get('/stats', requireProfessional, async (req, res) => {
 
 router.get('/stats/detailed', requireProfessional, async (req, res) => {
   try {
-    const { data: appts, error } = await supabase
+    console.log("🔍 [PRO Detailed Stats] Starting for pro ID:", req.user.id);
+
+    const proId = req.user.id;
+
+    // 1. Get ALL appointments (for unique clients + no-show rate)
+    const { data: allAppts, error: allError } = await supabase
       .from('Appointment')
-      .select('*')
-      .eq('professional_id', req.user.id);
-    if (error) throw error;
+      .select('client_id, status, payment_status, date_heure')
+      .eq('professional_id', proId);
 
-    const clientIds = [...new Set((appts || []).map((a) => a.client_id).filter(Boolean))];
-    const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
-    
-    const { data: clients } = await supabase.from('utilisateur').select('id').in('id', clientIds);
-    const { data: services } = await supabase.from('Service').select('nom, id, prix').eq('professional_id', req.user.id);
-    const { data: allServices } = serviceIds.length
-      ? await supabase.from('Service').select('id, prix').in('id', serviceIds)
-      : { data: [] };
+    if (allError) throw allError;
 
-    const servicesPriceMap = Object.fromEntries((allServices || []).map((s) => [s.id, s.prix || 0]));
+    // 2. Get only paid appointments (for revenue)
+    const { data: paidAppts, error: paidError } = await supabase
+      .from('Appointment')
+      .select('service_id, payment_status, date_heure')
+      .eq('professional_id', proId)
+      .eq('payment_status', 'paid');
 
-    const total = (appts || []).length;
-    
-    // Updated to DAILY grouping
+    if (paidError) throw paidError;
+
+    console.log(`📊 Found ${allAppts?.length || 0} total appointments, ${paidAppts?.length || 0} paid`);
+
+    // Get services for revenue calculation
+    const { data: services } = await supabase
+      .from('Service')
+      .select('id, nom, prix')
+      .eq('professional_id', proId);
+
+    const servicesPriceMap = Object.fromEntries(
+      (services || []).map(s => [s.id, s.prix || 0])
+    );
+
+    // === REVENUE CALCULATIONS (paid only) ===
+    let totalRevenue = 0;
     const dailyStats = {};
-    const months = {}; // Keeping months for the side chart
     const revenueByMonth = {};
+    const serviceCountMap = {};
 
-    (appts || []).forEach((appt) => {
-      const d = new Date(appt.date_heure);
-      const dayKey = appt.date_heure.split('T')[0]; // YYYY-MM-DD
-      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      
-      dailyStats[dayKey] = dailyStats[dayKey] || { count: 0, revenue: 0 };
-      dailyStats[dayKey].count += 1;
-      
-      months[monthKey] = (months[monthKey] || 0) + 1;
+    const now = new Date();
 
-      if (appt.payment_status === 'paid') {
-        const price = servicesPriceMap[appt.service_id] || 0;
-        dailyStats[dayKey].revenue += price;
-        revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + price;
+    (paidAppts || []).forEach(appt => {
+      if (!appt.date_heure) return;
+      const price = servicesPriceMap[appt.service_id] || 0;
+      totalRevenue += price;
+
+      const date = new Date(appt.date_heure);
+      const dayKey = appt.date_heure.split('T')[0];
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      dailyStats[dayKey] = dailyStats[dayKey] || { revenue: 0 };
+      dailyStats[dayKey].revenue += price;
+
+      revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + price;
+
+      if (appt.service_id) {
+        serviceCountMap[appt.service_id] = (serviceCountMap[appt.service_id] || 0) + 1;
       }
     });
 
+    // Daily curve (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const daily = Object.entries(dailyStats)
+      .filter(([date]) => new Date(date) >= thirtyDaysAgo)
       .map(([date, data]) => ({
         date,
-        count: data.count,
-        revenue: data.revenue,
+        revenue: Number(data.revenue.toFixed(2))
       }))
-      .sort((a, b) => (a.date > b.date ? 1 : -1))
-      .slice(-30); // Return last 30 days for clarity
+      .sort((a, b) => a.date.localeCompare(b.date));
 
-    const monthly = Object.entries(months)
-      .map(([month, count]) => ({
-        month,
-        count,
-        revenue: revenueByMonth[month] || 0,
-      }))
-      .sort((a, b) => (a.month > b.month ? 1 : -1));
+    // Monthly
+    const monthly = Object.entries(revenueByMonth)
+      .map(([month, revenue]) => ({ month, revenue: Number(revenue.toFixed(2)) }))
+      .sort((a, b) => a.month.localeCompare(b.month));
 
-    const now = new Date();
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
     const thisMonthRevenue = revenueByMonth[thisMonthKey] || 0;
     const lastMonthRevenue = revenueByMonth[lastMonthKey] || 0;
-    const totalRevenue = Object.values(revenueByMonth).reduce((a, b) => a + b, 0);
 
     const revenueGrowth = lastMonthRevenue > 0
       ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
-      : thisMonthRevenue > 0 ? 100 : 0;
+      : (thisMonthRevenue > 0 ? 100 : 0);
 
-    const { data: proRow } = await supabase.from('utilisateur').select('rating').eq('id', req.user.id).single();
+    const taxInfo = calculateTieredTax(thisMonthRevenue);
 
-    res.json({
-      total_appointments: total,
-      unique_clients: (clients || []).length,
-      noshow_rate: total ? Math.round(((appts || []).filter((a) => a.status === 'cancelled').length / total) * 100) : 0,
-      avg_rating: proRow?.rating || 0,
+    // === NEW CALCULATIONS ===
+    // 1. Unique clients (Patients suivis)
+    const uniqueClients = new Set(
+      (allAppts || []).map(a => a.client_id).filter(Boolean)
+    ).size;
+
+    // 2. No-show rate
+    const totalAppts = allAppts?.length || 0;
+    const noShowCount = (allAppts || []).filter(a => 
+      String(a.status || '').toLowerCase() === 'cancelled' ||
+      String(a.status || '').toLowerCase() === 'no_show'
+    ).length;
+    const noshow_rate = totalAppts ? Math.round((noShowCount / totalAppts) * 100) : 0;
+
+    // 3. Average rating (from professional profile)
+    const { data: proRow } = await supabase
+      .from('utilisateur')
+      .select('rating')
+      .eq('id', proId)
+      .single();
+
+    const avg_rating = proRow?.rating ? Number(proRow.rating) : 0;
+
+    // Services breakdown
+    const servicesBreakdown = (services || []).map(svc => ({
+      name: svc.nom || 'Service inconnu',
+      count: serviceCountMap[svc.id] || 0
+    }));
+
+    const result = {
+      total_appointments: totalAppts,
+      unique_clients: uniqueClients,
+      noshow_rate: noshow_rate,
+      avg_rating: avg_rating,
       daily,
       monthly,
-      services: (services || []).map((svc) => ({ 
-        name: svc.nom || '', 
-        count: (appts || []).filter(a => a.service_id === svc.id).length 
-      })),
-      total_revenue: totalRevenue,
-      this_month_revenue: thisMonthRevenue,
-      last_month_revenue: lastMonthRevenue,
+      services: servicesBreakdown,
+      total_revenue: Number(totalRevenue.toFixed(2)),
+      this_month_revenue: Number(thisMonthRevenue.toFixed(2)),
+      last_month_revenue: Number(lastMonthRevenue.toFixed(2)),
       revenue_growth: revenueGrowth,
-    });
+      financials: {
+        monthlyGross: thisMonthRevenue,
+        ...taxInfo,
+        monthLabel: now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+      }
+    };
+
+    console.log("📤 PRO Stats Response sent");
+    res.json(result);
+
   } catch (err) {
     console.error('GET /pro/stats/detailed error', err);
     res.status(500).json({ error: 'Impossible de recuperer les statistiques detaillees' });
