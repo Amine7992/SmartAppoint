@@ -4,6 +4,10 @@ const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { mapService, mapAppointment } = require('./helpers');
 const { createNotification } = require('../services/notificationService');
+const {
+  getProfessionalSchedule,
+  updateProfessionalSchedule,
+} = require('../services/proScheduleStore');
 
 router.use(auth);
 
@@ -320,6 +324,25 @@ router.get('/clients', requireProfessional, async (req, res) => {
   } catch (err) {
     console.error('GET /pro/clients error', err);
     res.status(500).json({ error: 'Impossible de recuperer les clients' });
+  }
+});
+
+router.get('/schedule', requireProfessional, async (req, res) => {
+  try {
+    res.json(getProfessionalSchedule(req.user.id));
+  } catch (err) {
+    console.error('GET /pro/schedule error', err);
+    res.status(500).json({ error: 'Impossible de recuperer le planning' });
+  }
+});
+
+router.put('/schedule', requireProfessional, async (req, res) => {
+  try {
+    const schedule = updateProfessionalSchedule(req.user.id, req.body || {});
+    res.json(schedule);
+  } catch (err) {
+    console.error('PUT /pro/schedule error', err);
+    res.status(500).json({ error: 'Impossible de mettre a jour le planning' });
   }
 });
 

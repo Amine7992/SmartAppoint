@@ -55,8 +55,30 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
   const days = getNextDays();
   const [selectedDay, setSelectedDay] = useState(appointment?.date || '');
   const [selectedTime, setSelectedTime] = useState(appointment?.time || '');
+  const [availableSlots, setAvailableSlots] = useState(SLOTS);
+  const [takenSlots, setTakenSlots] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!appointment?.professional_id || !selectedDay) return;
+
+    api.get(`/professionals/${appointment.professional_id}/slots`, { params: { date: selectedDay } })
+      .then(({ data }) => {
+        const legacyTakenSlots = Array.isArray(data) ? data : [];
+        const normalizedTakenSlots = data?.takenSlots || legacyTakenSlots;
+        const normalizedAvailableSlots = Array.isArray(data?.availableSlots)
+          ? data.availableSlots
+          : SLOTS.filter((slot) => !normalizedTakenSlots.includes(slot));
+
+        setAvailableSlots(normalizedAvailableSlots);
+        setTakenSlots(normalizedTakenSlots);
+      })
+      .catch(() => {
+        setAvailableSlots([]);
+        setTakenSlots([]);
+      });
+  }, [appointment?.professional_id, selectedDay]);
 
   const handleSubmit = async () => {
     if (!selectedDay || !selectedTime) {
@@ -95,8 +117,8 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
           })}
         </div>
         <div className="edit-slots-grid">
-          {SLOTS.map((slot) => (
-            <button key={slot} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
+          {availableSlots.map((slot) => (
+            <button key={slot} disabled={takenSlots.includes(slot) && slot !== appointment?.time} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
               {slot}
             </button>
           ))}

@@ -27,11 +27,11 @@ const Login = () => {
     setLoading(true);
     try {
       const res = await api.post('/auth/login', form);
-      const { token, user } = res.data;
+      const { token, refreshToken, expiresAt, user } = res.data;
 
       if (token) {
         setError('');
-        login(token, user);
+        login({ token, refreshToken, expiresAt }, user);
         toast.success(`Bienvenue, ${user.nom || 'utilisateur'} !`);
         if (user.role === 'admin') navigate('/admin/dashboard');
         else if (user.role === 'professional') navigate('/pro/dashboard');

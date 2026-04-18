@@ -7,6 +7,7 @@ const supabase = require('../config/supabase');
 const { auth } = require('../middleware/auth');
 const { enrichProfileWithCoordinates } = require('../API/gecorder');
 const { getProfessionalReviewStatus } = require('../services/adminProfessionalReviewStore');
+const { getCategoryFromSpecialite } = require('./specialites');
 const AVATAR_BUCKET = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const STORAGE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
@@ -103,7 +104,7 @@ router.put('/users/profile', async (req, res) => {
     if (name !== undefined && nom === undefined) updates.nom = name || null;
     if (email !== undefined) updates.email = email || null;
     if (phone !== undefined) updates.phone = phone || null;
-    if (specialite !== undefined) updates.specialite = specialite || null;
+    if (specialite !== undefined) {updates.categorie = getCategoryFromSpecialite(specialite) || null;}
     if (city !== undefined) updates.city = city || null;
     if (adresse !== undefined) updates.adresse = adresse || null;
     if (description !== undefined) updates.description = description || null;

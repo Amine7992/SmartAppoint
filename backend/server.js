@@ -4,6 +4,7 @@ const cors    = require('cors');
 const helmet  = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path    = require('path');
+const aiRoutes = require('./routes/ai');
 
 const authRoutes              = require('./routes/auth');
 const clientRoutes            = require('./routes/client');
@@ -12,6 +13,8 @@ const notificationsRoutes     = require('./routes/notifications');
 const userRoutes              = require('./routes/users');
 const appointmentRatingRouter = require('./routes/appointment');
 const adminRoutes             = require('./routes/admin'); // 1. Importer les routes admin
+const { router: specialitesRoutes } = require('./routes/specialites');
+
 
 const app = express();
 const allowedOrigins = String(process.env.CORS_ORIGIN || '')
@@ -63,12 +66,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ── Routes ────────────────────────────────────────────────
 app.use('/api/auth',         authLimiter, authRoutes);
 app.use('/api',              clientRoutes);
+app.use('/api', specialitesRoutes);
 app.use('/api',              userRoutes);
 app.use('/api',              notificationsRoutes);
 app.use('/api/pro',          proRoutes);
 app.use('/api/appointments', appointmentRatingRouter);
 app.use('/api/admin',        adminLimiter, adminRoutes); // 2. Enregistrer avec le préfixe /api/admin
-
+app.use('/api/ai', aiRoutes);
 // ── Debug routes ─────────────────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
   app.get('/__debug_routes', (req, res) => {

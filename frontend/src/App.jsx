@@ -10,6 +10,7 @@ import Login from './pages/auth/Login.jsx';
 import Register from './pages/auth/Register.jsx';
 
 import ClientDashboard from './pages/client/ClientDashboard.jsx';
+import SpecialitiesPage from './pages/client/SpecialitiesPage.jsx';
 import MyAppointments from './pages/client/MyAppointments.jsx';
 import BookAppointment from './pages/client/BookAppointment.jsx';
 import Profile from './pages/client/Profile.jsx';
@@ -45,6 +46,7 @@ function App() {
 
           <Route path="/client/dashboard" element={<PrivateRoute roles={['client']}><ClientDashboard /></PrivateRoute>} />
           <Route path="/client/appointments" element={<PrivateRoute roles={['client']}><MyAppointments /></PrivateRoute>} />
+          <Route path="/client/specialites" element={<PrivateRoute roles={['client']}><SpecialitiesPage /></PrivateRoute>} />
           <Route path="/client/book" element={<PrivateRoute roles={['client']}><BookAppointment /></PrivateRoute>} />
           <Route path="/client/profile" element={<PrivateRoute roles={['client']}><Profile /></PrivateRoute>} />
           <Route path="/client/notifications" element={<PrivateRoute roles={['client']}><Notifications /></PrivateRoute>} />
