@@ -5,7 +5,7 @@ const helmet  = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path    = require('path');
 const cron    = require('node-cron');
-
+const aiRoutes = require('./routes/ai');
 const authRoutes              = require('./routes/auth');
 const clientRoutes            = require('./routes/client');
 const proRoutes               = require('./routes/pro');
