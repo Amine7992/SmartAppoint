@@ -5,6 +5,13 @@ const { auth } = require('../middleware/auth');
 const { mapProfessional, mapService, mapAppointment } = require('./helpers');
 const { createNotification } = require('../services/notificationService');
 const { getProfessionalReviewStatus } = require('../services/adminProfessionalReviewStore');
+const {
+  getProfessionalSchedule,
+  getAvailableSlotsForDate,
+  isSlotAllowedBySchedule,
+} = require('../services/proScheduleStore');
+
+const BOOKABLE_SLOTS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00'];
 
 router.use(auth);
 
@@ -90,7 +97,15 @@ router.get('/professionals/:id/slots', async (req, res) => {
       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     });
 
-    res.json(takenSlots);
+    const schedule = getProfessionalSchedule(id);
+    const availableSlots = getAvailableSlotsForDate(schedule, date, BOOKABLE_SLOTS);
+
+    res.json({
+      takenSlots,
+      availableSlots,
+      dayOff: schedule.daysOff.includes(date),
+      workingDay: availableSlots.length > 0,
+    });
   } catch (err) {
     console.error('GET /professionals/:id/slots error', err);
     res.status(500).json({ error: 'Impossible de recuperer les creneaux' });
@@ -136,6 +151,11 @@ router.post('/appointments', async (req, res) => {
     const dateHeure = buildAppointmentDateTime(date, time);
     if (!dateHeure) {
       return res.status(400).json({ error: 'Date ou heure invalide' });
+    }
+
+    const schedule = getProfessionalSchedule(professional_id);
+    if (!isSlotAllowedBySchedule(schedule, date, time)) {
+      return res.status(400).json({ error: 'Ce creneau est en dehors des horaires du professionnel' });
     }
 
     const payload = {
@@ -208,6 +228,11 @@ router.put('/appointments/:id', async (req, res) => {
       const dateHeure = buildAppointmentDateTime(date, time);
       if (!dateHeure) {
         return res.status(400).json({ error: 'Date ou heure invalide' });
+      }
+
+      const schedule = getProfessionalSchedule(appointment.professional_id);
+      if (!isSlotAllowedBySchedule(schedule, date, time)) {
+        return res.status(400).json({ error: 'Ce creneau est en dehors des horaires du professionnel' });
       }
 
       updates.date_heure = dateHeure;

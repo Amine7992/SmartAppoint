@@ -239,3 +239,91 @@
   background: #d1fae5;
   color: #065f46;
 }
+
+.plan-settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.plan-settings-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    background: #fff;
+}
+
+.plan-settings-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.plan-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #374151;
+}
+
+.plan-ranges {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.plan-range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.plan-range-row input[type="time"] {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-size: 12px;
+}
+
+.plan-days-off {
+    margin-top: 20px;
+    border-top: 1px solid #eef2f7;
+    padding-top: 18px;
+}
+
+.plan-days-off-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.plan-days-off-form input[type="date"] {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+.plan-days-off-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.plan-day-off-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #9f1239;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}

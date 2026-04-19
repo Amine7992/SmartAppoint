@@ -10,6 +10,13 @@ const mapUser = (userData) => ({
   specialty: userData.specialite || '',
 });
 
+const mapSession = (session) => ({
+  token: session.access_token,
+  refreshToken: session.refresh_token,
+  expiresAt: session.expires_at || null,
+  expiresIn: session.expires_in || null,
+});
+
 router.post('/register', async (req, res) => {
   const {
     name, prenom, email, password, role, phone,
@@ -85,11 +92,50 @@ router.post('/login', async (req, res) => {
 
     res.status(200).json({
       message: 'Connexion reussie',
-      token: data.session.access_token,
+      ...mapSession(data.session),
       user: mapUser(userData),
     });
   } catch (err) {
     console.error('Login exception:', err);
+    res.status(500).json({ error: err.message || 'Une erreur serveur est survenue' });
+  }
+});
+
+router.post('/refresh', async (req, res) => {
+  const { refreshToken } = req.body || {};
+
+  if (!refreshToken) {
+    return res.status(400).json({ error: 'Refresh token manquant' });
+  }
+
+  try {
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+
+    if (error || !data?.session?.user?.id) {
+      console.error('Supabase refresh error:', error);
+      return res.status(401).json({ error: 'Session expiree, veuillez vous reconnecter' });
+    }
+
+    const { data: userData, error: userError } = await supabase
+      .from('utilisateur')
+      .select('*')
+      .eq('id', data.session.user.id)
+      .single();
+
+    if (userError) {
+      console.error('Supabase user fetch after refresh error:', userError);
+      return res.status(500).json({ error: 'Profil introuvable dans la table utilisateur' });
+    }
+
+    res.status(200).json({
+      message: 'Session rafraichie',
+      ...mapSession(data.session),
+      user: mapUser(userData),
+    });
+  } catch (err) {
+    console.error('Refresh exception:', err);
     res.status(500).json({ error: err.message || 'Une erreur serveur est survenue' });
   }
 });

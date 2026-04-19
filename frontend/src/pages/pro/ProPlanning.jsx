@@ -7,6 +7,8 @@ import './ProPlanning.css';
 const HOURS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30',
                '12:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'];
 const DAYS_FR = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const DAY_KEYS = [1, 2, 3, 4, 5, 6, 0];
+const EMPTY_RANGE = { start: '08:00', end: '12:00' };
 
 const getWeekDays = (baseDate) => {
   const day = baseDate.getDay();
@@ -35,13 +37,19 @@ const StatusBadge = ({ status }) => {
 const ProPlanning = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
+  const [schedule, setSchedule] = useState(null);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [dayOffInput, setDayOffInput] = useState('');
   const [loading, setLoading] = useState(true);
   const weekDays = getWeekDays(currentDate);
   const now = new Date();
 
   useEffect(() => {
-    api.get('/pro/appointments')
-      .then(r => setAppointments(r.data || []))
+    Promise.all([api.get('/pro/appointments'), api.get('/pro/schedule')])
+      .then(([appointmentsResponse, scheduleResponse]) => {
+        setAppointments(appointmentsResponse.data || []);
+        setSchedule(scheduleResponse.data || null);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -112,6 +120,51 @@ const ProPlanning = () => {
   );
   const rescheduleRequests = appointments.filter(a => a.status === 'reschedule_requested');
 
+  const updateWeeklyDay = (dayKey, updater) => {
+    setSchedule((prev) => {
+      const currentDay = prev?.weekly?.[dayKey] || { enabled: false, ranges: [] };
+      return {
+        ...prev,
+        weekly: {
+          ...prev.weekly,
+          [dayKey]: updater(currentDay),
+        },
+      };
+    });
+  };
+
+  const saveSchedule = async (nextSchedule = schedule) => {
+    setScheduleSaving(true);
+    try {
+      const { data } = await api.put('/pro/schedule', nextSchedule);
+      setSchedule(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  const addDayOff = async () => {
+    if (!dayOffInput) return;
+    const nextSchedule = {
+      ...schedule,
+      daysOff: [...new Set([...(schedule?.daysOff || []), dayOffInput])].sort(),
+    };
+    setSchedule(nextSchedule);
+    setDayOffInput('');
+    await saveSchedule(nextSchedule);
+  };
+
+  const removeDayOff = async (date) => {
+    const nextSchedule = {
+      ...schedule,
+      daysOff: (schedule?.daysOff || []).filter((value) => value !== date),
+    };
+    setSchedule(nextSchedule);
+    await saveSchedule(nextSchedule);
+  };
+
   return (
     <div className="pro-layout">
       <ProSidebar />
@@ -162,6 +215,102 @@ const ProPlanning = () => {
             ))}
           </div>
         </div>
+
+        {schedule && (
+          <div className="pro-panel" style={{ marginTop: 20 }}>
+            <div className="pro-panel-header">
+              <h2 className="pro-panel-title">Plages de travail et jours off</h2>
+              <button className="plan-btn-validate" onClick={() => saveSchedule()} disabled={scheduleSaving}>
+                <Check size={14} /> {scheduleSaving ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+
+            <div className="plan-settings">
+              {DAY_KEYS.map((dayKey, index) => {
+                const dayConfig = schedule.weekly?.[dayKey] || { enabled: false, ranges: [] };
+                return (
+                  <div key={dayKey} className="plan-settings-card">
+                    <div className="plan-settings-head">
+                      <strong>{DAYS_FR[index]}</strong>
+                      <label className="plan-toggle">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(dayConfig.enabled)}
+                          onChange={(e) => updateWeeklyDay(String(dayKey), (currentDay) => ({
+                            ...currentDay,
+                            enabled: e.target.checked,
+                            ranges: currentDay.ranges?.length ? currentDay.ranges : [EMPTY_RANGE],
+                          }))}
+                        />
+                        <span>Disponible</span>
+                      </label>
+                    </div>
+
+                    <div className="plan-ranges">
+                      {(dayConfig.ranges || []).map((range, rangeIndex) => (
+                        <div key={`${dayKey}-${rangeIndex}`} className="plan-range-row">
+                          <input
+                            type="time"
+                            value={range.start}
+                            onChange={(e) => updateWeeklyDay(String(dayKey), (currentDay) => ({
+                              ...currentDay,
+                              ranges: currentDay.ranges.map((item, itemIndex) => itemIndex === rangeIndex ? { ...item, start: e.target.value } : item),
+                            }))}
+                          />
+                          <span>a</span>
+                          <input
+                            type="time"
+                            value={range.end}
+                            onChange={(e) => updateWeeklyDay(String(dayKey), (currentDay) => ({
+                              ...currentDay,
+                              ranges: currentDay.ranges.map((item, itemIndex) => itemIndex === rangeIndex ? { ...item, end: e.target.value } : item),
+                            }))}
+                          />
+                          <button
+                            className="plan-btn-cancel"
+                            onClick={() => updateWeeklyDay(String(dayKey), (currentDay) => ({
+                              ...currentDay,
+                              ranges: currentDay.ranges.filter((_, itemIndex) => itemIndex !== rangeIndex),
+                            }))}
+                            type="button"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      className="plan-nav-btn"
+                      type="button"
+                      onClick={() => updateWeeklyDay(String(dayKey), (currentDay) => ({
+                        ...currentDay,
+                        ranges: [...(currentDay.ranges || []), EMPTY_RANGE],
+                      }))}
+                    >
+                      Ajouter une plage
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="plan-days-off">
+              <h3 className="book-subtitle">Jours off</h3>
+              <div className="plan-days-off-form">
+                <input type="date" value={dayOffInput} onChange={(e) => setDayOffInput(e.target.value)} />
+                <button className="plan-btn-cancel" type="button" onClick={addDayOff}>Ajouter</button>
+              </div>
+              <div className="plan-days-off-list">
+                {(schedule.daysOff || []).length > 0 ? schedule.daysOff.map((date) => (
+                  <button key={date} className="plan-day-off-chip" type="button" onClick={() => removeDayOff(date)}>
+                    {date} <X size={12} />
+                  </button>
+                )) : <p className="pro-loading">Aucun jour off enregistre.</p>}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pending appointments */}
         <div className="pro-panel" style={{ marginTop: 20 }}>

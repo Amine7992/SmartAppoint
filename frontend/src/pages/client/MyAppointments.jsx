@@ -86,10 +86,48 @@ const isSlotAvailable = (dayStr, slot) => {
 
 const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
   const days = getNextDays();
-  const [selectedDay, setSelectedDay] = useState(appointment.date); // Use current appt date as default
-  const [selectedTime, setSelectedTime] = useState(appointment.time);
+  const [selectedDay, setSelectedDay] = useState(appointment?.date || '');
+  const [selectedTime, setSelectedTime] = useState(appointment?.time || '');
+  const [availableSlots, setAvailableSlots] = useState(SLOTS);
+  const [takenSlots, setTakenSlots] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (!appointment?.professional_id || !selectedDay) return;
 
+    api.get(`/professionals/${appointment.professional_id}/slots`, { params: { date: selectedDay } })
+      .then(({ data }) => {
+        const legacyTakenSlots = Array.isArray(data) ? data : [];
+        const normalizedTakenSlots = data?.takenSlots || legacyTakenSlots;
+        const normalizedAvailableSlots = Array.isArray(data?.availableSlots)
+          ? data.availableSlots
+          : SLOTS.filter((slot) => !normalizedTakenSlots.includes(slot));
+
+        setAvailableSlots(normalizedAvailableSlots);
+        setTakenSlots(normalizedTakenSlots);
+      })
+      .catch(() => {
+        setAvailableSlots([]);
+        setTakenSlots([]);
+      });
+  }, [appointment?.professional_id, selectedDay]);
+
+  const handleSubmit = async () => {
+    if (!selectedDay || !selectedTime) {
+      setError('Choisissez une date et une heure.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSubmit(selectedDay, selectedTime);
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Modification impossible.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="ma-modal-overlay">
@@ -112,20 +150,11 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
         </div>
 
         <div className="edit-slots-grid">
-          {SLOTS.map((slot) => {
-            const available = isSlotAvailable(selectedDay, slot);
-            return (
-              <button
-                key={slot} type="button"
-                className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''} ${!available ? 'disabled' : ''}`}
-                onClick={() => available && setSelectedTime(slot)}
-                disabled={!available}
-                style={!available ? { opacity: 0.4, pointerEvents: 'none', textDecoration: 'line-through' } : {}}
-              >
-                {slot}
-              </button>
-            );
-          })}
+          {availableSlots.map((slot) => (
+            <button key={slot} disabled={takenSlots.includes(slot) && slot !== appointment?.time} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
+              {slot}
+            </button>
+          ))}
         </div>
 
         <div className="ma-modal-footer">

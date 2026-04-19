@@ -1,6 +1,5 @@
 import { createContext, useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import api from '../api/axios';
+import api, { clearAuthStorage, persistAuthSession, refreshAuthSession, shouldRefreshSession } from '../api/axios';
 
 export const AuthContext = createContext();
 
@@ -20,39 +19,51 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      try {
-        const decoded = jwtDecode(savedToken);
-        if (decoded.exp * 1000 > Date.now()) {
-          setToken(savedToken);
-          setUser(normalizeUser(JSON.parse(savedUser)));
+    const initializeAuth = async () => {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
 
-          api.get('/users/profile')
-            .then(({ data }) => {
-              if (data) {
-                updateUser(data);
-              }
-            })
-            .catch(() => {
-              // Keep the cached user if the refresh endpoint is temporarily unavailable.
-            });
-        } else {
-          logout();
+      if (!savedToken || !savedUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        if (shouldRefreshSession()) {
+          await refreshAuthSession();
+        }
+
+        const activeToken = localStorage.getItem('token');
+        const activeUser = localStorage.getItem('user');
+
+        if (!activeToken || !activeUser) {
+          throw new Error('Session locale incomplete');
+        }
+
+        setToken(activeToken);
+        setUser(normalizeUser(JSON.parse(activeUser)));
+
+        const { data } = await api.get('/users/profile');
+        if (data) {
+          updateUser(data);
         }
       } catch {
         logout();
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = (nextToken, userData) => {
+  const login = (sessionData, userData) => {
     const normalizedUser = normalizeUser(userData);
-    localStorage.setItem('token', nextToken);
-    localStorage.setItem('user', JSON.stringify(normalizedUser));
-    setToken(nextToken);
+    persistAuthSession({
+      ...sessionData,
+      user: normalizedUser,
+    });
+    setToken(sessionData.token);
     setUser(normalizedUser);
   };
 
@@ -63,8 +74,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearAuthStorage();
     setToken(null);
     setUser(null);
   };

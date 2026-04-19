@@ -167,8 +167,39 @@ const ProProfile = () => {
             <div className="profile-field"><label className="profile-label">Prenom</label><input className="profile-input" name="prenom" value={form.prenom} onChange={handleChange} placeholder="Votre prenom" /></div>
             <div className="profile-field"><label className="profile-label"><Mail size={13} /> Adresse email</label><input className="profile-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder="pro@smartappoint.com" /></div>
             <div className="profile-field"><label className="profile-label"><Phone size={13} /> Telephone</label><input className="profile-input" name="phone" value={form.phone} onChange={handleChange} placeholder="+216 XX XXX XXX" /></div>
-            <div className="profile-field"><label className="profile-label"><Briefcase size={13} /> Specialite</label><input className="profile-input" name="specialite" value={form.specialite} onChange={handleChange} placeholder="Votre specialite" /></div>
-            {msgInfo && <p className={`profile-msg ${msgInfo.type}`}>{msgInfo.text}</p>}
+            <div className="profile-field">
+            <label className="profile-label"><Briefcase size={13} /> Spécialité</label>
+            <input
+              className="profile-input"
+              name="specialite"
+              value={form.specialite}
+              onChange={handleChange}
+              placeholder="Ex: Médecin généraliste, Développeur web, Coiffeur..."
+              list="specialites-list"
+            />
+            <datalist id="specialites-list">
+              <option value="Médecin généraliste" />
+              <option value="Dentiste" />
+              <option value="Kinésithérapeute" />
+              <option value="Psychologue" />
+              <option value="Développeur web" />
+              <option value="Data scientist" />
+              <option value="Designer UX/UI" />
+              <option value="DevOps" />
+              <option value="Comptable" />
+              <option value="Conseiller financier" />
+              <option value="Avocat" />
+              <option value="Notaire" />
+              <option value="Professeur" />
+              <option value="Formateur professionnel" />
+              <option value="Coiffeur" />
+              <option value="Photographe" />
+              <option value="Ingénieur mécanique" />
+              <option value="Électricien" />
+              <option value="Chauffeur" />
+              <option value="Logisticien" />
+            </datalist> </div>            
+          {msgInfo && <p className={`profile-msg ${msgInfo.type}`}>{msgInfo.text}</p>}
             <button className="profile-save-btn" style={{ background: '#0f766e' }} onClick={handleSaveInfo} disabled={savingInfo}><Save size={14} />{savingInfo ? 'Enregistrement...' : 'Enregistrer les modifications'}</button>
           </div>
 

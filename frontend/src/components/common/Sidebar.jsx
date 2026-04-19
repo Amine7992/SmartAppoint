@@ -42,7 +42,7 @@ const Sidebar = () => {
             <CalendarDays size={18} />
             <span>Mes rendez-vous</span>
           </NavLink>
-          <NavLink to="/client/book" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink to="/client/specialites" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Search size={18} />
             <span>Trouver un pro</span>
           </NavLink>
