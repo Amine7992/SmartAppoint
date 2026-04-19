@@ -74,11 +74,16 @@ const mapAppointment = (appt, service, pro, client) => {
 };
 
 const mapNotification = (notif) => ({
-  id:         notif.id,
-  message:    notif.message,
-  type:       notif.type || 'appointment',
-  created_at: notif.created_at,
-  read:       notif.is_read || false,
+  id:                  notif.id,
+  message:             notif.message,
+  type:                notif.type || 'appointment',
+  created_at:          notif.created_at,
+  read:                notif.is_read || false,
+  // Métadonnées pour la notification de créneau libéré
+  freed_appointment_id: notif.freed_appointment_id || null,
+  freed_slot_time:      notif.freed_slot_time      || null,
+  freed_slot_date:      notif.freed_slot_date      || null,
+  target_appointment_id: notif.target_appointment_id || null,
 });
 
 module.exports = {

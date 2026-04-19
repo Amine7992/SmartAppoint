@@ -2,7 +2,15 @@ const supabase = require('../config/supabase');
 
 const DEFAULT_TYPE = 'info';
 
-const createNotification = async ({ userId, message, type = DEFAULT_TYPE }) => {
+const createNotification = async ({
+  userId,
+  message,
+  type = DEFAULT_TYPE,
+  freed_appointment_id = null,
+  freed_slot_time = null,
+  freed_slot_date = null,
+  target_appointment_id = null,
+}) => {
   if (!userId || !message) return null;
 
   const payload = {
@@ -10,6 +18,10 @@ const createNotification = async ({ userId, message, type = DEFAULT_TYPE }) => {
     message,
     is_read: false,
     type,
+    freed_appointment_id,
+    freed_slot_time,
+    freed_slot_date,
+    target_appointment_id,
   };
 
   const { data, error } = await supabase
