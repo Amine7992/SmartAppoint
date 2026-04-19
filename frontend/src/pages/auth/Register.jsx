@@ -29,9 +29,12 @@ const Register = () => {
       toast.success('Compte créé ! Vous pouvez vous connecter.');
       navigate('/login');
     } catch (err) {
-      const errors = err.response?.data?.errors || null;
-      if (errors) Object.values(errors).forEach((e) => toast.error(e[0]));
-      else toast.error('Une erreur est survenue');
+      // Afficher le vrai message d'erreur renvoyé par le backend
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        'Une erreur est survenue lors de la création du compte.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -101,7 +104,7 @@ const Register = () => {
           <div className="auth-two-col">
             <div className="auth-field">
               <label className="auth-label">Mot de passe</label>
-              <input type="password" name="password" className="auth-input" placeholder="Min. 8 car." value={form.password} onChange={handleChange} required />
+              <input type="password" name="password" className="auth-input" placeholder="Min. 6 car." value={form.password} onChange={handleChange} required />
             </div>
             <div className="auth-field">
               <label className="auth-label">Confirmer</label>

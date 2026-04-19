@@ -13,13 +13,14 @@ const proRoutes               = require('./routes/pro');
 const notificationsRoutes     = require('./routes/notifications');
 const userRoutes              = require('./routes/users');
 const appointmentRatingRouter = require('./routes/appointment');
-const adminRoutes             = require('./routes/admin'); // 1. Importer les routes admin
+const adminRoutes             = require('./routes/admin');
 const { router: specialitesRoutes } = require('./routes/specialites');
 
-
 const supabase = require('./config/supabase');
-const { cancelExpiredAppointments } = require('./services/appointmentService');
-
+const { 
+  cancelExpiredAppointments, 
+  sendAppointmentReminders 
+} = require('./services/appointmentService');
 
 const app = express();
 const allowedOrigins = String(process.env.CORS_ORIGIN || '')
@@ -72,14 +73,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ── Routes ────────────────────────────────────────────────
 app.use('/api/auth',         authLimiter, authRoutes);
 app.use('/api',              clientRoutes);
-app.use('/api', specialitesRoutes);
+app.use('/api',              specialitesRoutes);
 app.use('/api',              userRoutes);
 app.use('/api',              notificationsRoutes);
 app.use('/api/pro',          proRoutes);
 app.use('/api/appointments', appointmentRatingRouter);
-app.use('/api/admin',        adminLimiter, adminRoutes); // 2. Enregistrer avec le préfixe /api/admin
-app.use('/api/ai', aiRoutes);
-// ── Debug routes ─────────────────────────────────────────
+app.use('/api/admin',        adminLimiter, adminRoutes);
+app.use('/api/ai',           aiRoutes);
+
 if (process.env.NODE_ENV !== 'production') {
   app.get('/__debug_routes', (req, res) => {
     res.json(app._router.stack
@@ -92,13 +93,7 @@ if (process.env.NODE_ENV !== 'production') {
             methods: Object.keys(layer.route.methods),
           };
         }
-        const prefix = layer.regexp.toString()
-          .replace('/^\\/api\\/admin\\/?(?=\\/|$)/i', '/api/admin')
-          .replace('/^\\//i', '/');
-        return {
-          type:   'router',
-          path_prefix: prefix,
-        };
+        return { type: 'router' };
       })
     );
   });
@@ -119,16 +114,23 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Schedule job to cancel expired appointments every 10 minutes
+// ── CRON 1 : Annuler les RDVs expirés — toutes les 10 minutes ──
 cron.schedule('*/10 * * * *', () => {
-  console.log('CRON JOB: Running scheduled task: checking for expired appointments');
+  console.log('CRON 1: Vérification des rendez-vous expirés...');
   cancelExpiredAppointments();
+});
+
+// ── CRON 2 : Rappels 2h avant le RDV — toutes les 15 minutes ──
+cron.schedule('*/15 * * * *', () => {
+  console.log('CRON 2: Vérification des rappels de rendez-vous...');
+  sendAppointmentReminders();
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(` Serveur SmartAppoint opérationnel sur le port ${PORT}`);
   console.log(`  Module Admin activé sur /api/admin`);
+  console.log(`  Rappels automatiques activés (toutes les 15 min)`);
 
   // Run initial check for expired appointments on server start
   console.log('Running initial check for expired appointments');

@@ -123,6 +123,7 @@
     border-color: #e5e7eb;
 }
 
+/* ── nouveau : couleur verte pour slot_available ── */
 .notif-page-client .notif-green {
     background: #d1fae5;
     color: #065f46;
@@ -170,6 +171,32 @@
     font-size: 13px;
     color: #9ca3af;
     margin: 0;
+}
+
+/* ── nouveau : bouton "Oui, avancer mon RDV" ── */
+.notif-take-slot-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 7px 16px;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.notif-take-slot-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.notif-take-slot-btn:active {
+    transform: translateY(0);
 }
 
 .notif-dot-unread {

@@ -1,15 +1,19 @@
 const supabase = require('../config/supabase');
 const { createNotification } = require('./notificationService');
 
+// ─────────────────────────────────────────────────────────────
+//  Annuler les RDVs expirés
+// ─────────────────────────────────────────────────────────────
 const cancelExpiredAppointments = async () => {
   try {
     const now = new Date().toISOString();
 
-    // Find appointments that are pending or confirmed and have passed their time
+    // On n'annule QUE les 'confirmed' et 'past' — jamais les 'pending'
+    // car les 'pending' doivent attendre la validation du professionnel
     const { data: expiredAppointments, error: fetchError } = await supabase
       .from('Appointment')
       .select('id, client_id, professional_id, date_heure, status')
-      .in('status', ['pending', 'confirmed', 'past'])
+      .in('status', ['confirmed', 'past'])
       .lt('date_heure', now);
 
     if (fetchError) {
@@ -24,9 +28,6 @@ const cancelExpiredAppointments = async () => {
 
     console.log(`Found ${expiredAppointments.length} expired appointments to cancel`);
 
-    console.log(`Found ${expiredAppointments.length} expired appointments to cancel`);
-
-    // Update status to cancelled
     const appointmentIds = expiredAppointments.map(appt => appt.id);
     const { error: updateError } = await supabase
       .from('Appointment')
@@ -38,7 +39,6 @@ const cancelExpiredAppointments = async () => {
       return;
     }
 
-    // Send notifications to clients and professionals
     const notifications = [];
     for (const appt of expiredAppointments) {
       const appointmentDate = new Date(appt.date_heure).toLocaleString('fr-FR', {
@@ -61,13 +61,110 @@ const cancelExpiredAppointments = async () => {
     }
 
     await Promise.all(notifications);
-
     console.log(`Successfully cancelled ${expiredAppointments.length} expired appointments`);
   } catch (error) {
     console.error('Error in cancelExpiredAppointments:', error);
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+//  NOUVELLE FONCTION : Envoyer un rappel 2h avant le RDV
+//
+//  Fonctionnement :
+103: //  1. On calcule la fenêtre : [maintenant + 1h55, maintenant + 2h05]
+104: //     → cela représente les RDVs qui auront lieu dans ~2 heures
+105: //     → la fenêtre de 10 minutes compense le fait que le cron
+106: //       tourne toutes les 15 minutes (on évite les doublons
+107: //       grâce à la colonne reminder_sent)
+108: //  2. On filtre uniquement les RDVs 'confirmed' sans rappel déjà envoyé
+109: //  3. On envoie une notification à chaque client concerné
+110: //  4. On marque le RDV avec reminder_sent = true pour ne pas
+111: //     renvoyer le rappel au prochain passage du cron
+112: // ─────────────────────────────────────────────────────────────
+const sendAppointmentReminders = async () => {
+  try {
+    const now = new Date();
+
+    // Fenêtre : RDVs entre 1h55 et 2h05 à partir de maintenant
+    const windowStart = new Date(now.getTime() + (1 * 60 + 55) * 60 * 1000); // +1h55
+    const windowEnd   = new Date(now.getTime() + (2 * 60 + 5)  * 60 * 1000); // +2h05
+
+    console.log(`REMINDER CHECK: cherche les RDVs entre ${windowStart.toISOString()} et ${windowEnd.toISOString()}`);
+
+    // Chercher les RDVs confirmés dans cette fenêtre, pas encore rappelés
+    const { data: upcomingAppointments, error: fetchError } = await supabase
+      .from('Appointment')
+      .select('id, client_id, professional_id, date_heure')
+      .eq('status', 'confirmed')
+      .eq('reminder_sent', false)           // pas encore rappelé
+      .gte('date_heure', windowStart.toISOString())
+      .lte('date_heure', windowEnd.toISOString());
+
+    if (fetchError) {
+      if (fetchError.message?.includes('reminder_sent')) {
+        console.warn('REMINDER: La colonne reminder_sent n\'existe pas encore. Ajoutez-la dans Supabase.');
+      } else {
+        console.error('REMINDER: Erreur fetch:', fetchError.message);
+      }
+      return;
+    }
+
+    if (!upcomingAppointments || upcomingAppointments.length === 0) {
+      console.log('REMINDER: Aucun RDV à rappeler dans les 2 prochaines heures.');
+      return;
+    }
+
+    console.log(`REMINDER: ${upcomingAppointments.length} rappel(s) à envoyer.`);
+
+    const notifications = [];
+    const reminderIds   = [];
+
+    for (const appt of upcomingAppointments) {
+      const apptDate = new Date(appt.date_heure);
+      const heureLabel = apptDate.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Africa/Tunis',
+      });
+      const dateLabel = apptDate.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        timeZone: 'Africa/Tunis',
+      });
+
+      notifications.push(
+        createNotification({
+          userId:  appt.client_id,
+          type:    'appointment',
+          message: `⏰ Rappel : vous avez un rendez-vous aujourd'hui (${dateLabel}) à ${heureLabel}. Pensez à vous préparer !`,
+        })
+      );
+
+      reminderIds.push(appt.id);
+    }
+
+    await Promise.allSettled(notifications);
+
+    if (reminderIds.length > 0) {
+      const { error: updateError } = await supabase
+        .from('Appointment')
+        .update({ reminder_sent: true })
+        .in('id', reminderIds);
+
+      if (updateError) {
+        console.error('REMINDER: Erreur lors de la mise à jour reminder_sent:', updateError.message);
+      } else {
+        console.log(`REMINDER: ${reminderIds.length} rappel(s) envoyé(s) avec succès.`);
+      }
+    }
+
+  } catch (error) {
+    console.error('REMINDER: Erreur inattendue:', error.message);
+  }
+};
+
 module.exports = {
   cancelExpiredAppointments,
+  sendAppointmentReminders,
 };
