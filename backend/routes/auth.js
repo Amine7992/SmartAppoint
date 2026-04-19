@@ -32,9 +32,28 @@ router.post('/register', async (req, res) => {
     return res.status(403).json({ error: 'Les inscriptions sont temporairement fermées.' });
   }
 
+  // Validation basique avant d'appeler Supabase
+  if (!email || !password || !name || !role) {
+    return res.status(400).json({ error: 'Les champs email, mot de passe, nom et rôle sont obligatoires.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+  }
+
   try {
     const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
-    if (authError) throw authError;
+    if (authError) {
+      // Traduire les erreurs Supabase en français
+      let message = authError.message;
+      if (message.includes('already registered') || message.includes('already been registered')) {
+        message = 'Cet email est déjà utilisé. Veuillez vous connecter.';
+      } else if (message.includes('invalid email')) {
+        message = 'Adresse email invalide.';
+      } else if (message.includes('password')) {
+        message = 'Le mot de passe doit contenir au moins 6 caractères.';
+      }
+      return res.status(400).json({ error: message });
+    }
 
     const baseUserRow = {
       id: authData.user.id,
@@ -54,15 +73,27 @@ router.post('/register', async (req, res) => {
       baseUserRow.description = description || null;
     }
 
-    const userRow = await enrichProfileWithCoordinates(baseUserRow);
+    // Géocodage optionnel : si ça échoue, l'inscription continue quand même
+    let userRow = baseUserRow;
+    try {
+      userRow = await enrichProfileWithCoordinates(baseUserRow);
+    } catch (geoError) {
+      console.warn('Géocodage ignoré (non bloquant) :', geoError.message);
+      // On garde baseUserRow sans coordonnées, ce n'est pas critique
+    }
 
     const { error: dbError } = await supabase.from('utilisateur').insert([userRow]);
-    if (dbError) throw dbError;
+    if (dbError) {
+      // Si l'utilisateur Supabase Auth a été créé mais l'insert DB échoue,
+      // on log l'erreur avec un message clair
+      console.error('Erreur insertion utilisateur:', dbError);
+      return res.status(400).json({ error: 'Erreur lors de la création du profil : ' + dbError.message });
+    }
 
-    res.status(201).json({ message: 'Utilisateur cree avec succes !' });
+    res.status(201).json({ message: 'Compte créé avec succès ! Vous pouvez vous connecter.' });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message || 'Une erreur est survenue lors de l\'inscription.' });
   }
 });
 

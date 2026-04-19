@@ -305,6 +305,19 @@ router.put('/appointments/:id', async (req, res) => {
 router.delete('/appointments/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // 1. Récupérer le RDV annulé (avant mise à jour) pour avoir date_heure et professional_id
+    const { data: cancelledAppt, error: fetchErr } = await supabase
+      .from('Appointment')
+      .select('id, client_id, professional_id, date_heure, service_id')
+      .eq('id', id)
+      .eq('client_id', req.user.id)
+      .single();
+    if (fetchErr || !cancelledAppt) {
+      return res.status(404).json({ error: 'Rendez-vous introuvable.' });
+    }
+
+    // 2. Marquer comme annulé
     const { data, error } = await supabase
       .from('Appointment')
       .update({ status: 'cancelled' })
@@ -314,6 +327,7 @@ router.delete('/appointments/:id', async (req, res) => {
       .single();
     if (error) throw error;
 
+    // 3. Notifier le client annulant et le professionnel
     await Promise.all([
       createNotification({
         userId: req.user.id,
@@ -326,6 +340,56 @@ router.delete('/appointments/:id', async (req, res) => {
         message: 'Un client a annule un rendez-vous.',
       }),
     ]);
+
+    // 4. Chercher les clients avec des RDVs CONFIRMÉS plus tardifs le MÊME JOUR
+    //    chez le MÊME professionnel
+    const cancelledDate = new Date(cancelledAppt.date_heure);
+    // Début et fin du même jour (UTC)
+    const dayStart = new Date(cancelledDate);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = new Date(cancelledDate);
+    dayEnd.setUTCHours(23, 59, 59, 999);
+
+    const { data: laterAppts, error: laterErr } = await supabase
+      .from('Appointment')
+      .select('id, client_id, date_heure')
+      .eq('professional_id', cancelledAppt.professional_id)
+      .eq('status', 'confirmed')
+      .neq('client_id', req.user.id)           // Pas le client qui vient d'annuler
+      .gt('date_heure', cancelledAppt.date_heure) // Plus tardif que le créneau annulé
+      .lte('date_heure', dayEnd.toISOString())    // Même journée
+      .order('date_heure', { ascending: true });
+
+    if (!laterErr && laterAppts && laterAppts.length > 0) {
+      // Formater l'heure du créneau libéré
+      const freedDate = new Date(cancelledAppt.date_heure);
+      const freedSlotDate = freedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const freedSlotTime = freedDate.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Africa/Tunis',
+      });
+      const freedSlotDateLabel = freedDate.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        timeZone: 'Africa/Tunis',
+      });
+
+      // Notifier chaque client avec un RDV plus tardif
+      const notifPromises = laterAppts.map((appt) =>
+        createNotification({
+          userId: appt.client_id,
+          type: 'slot_available',
+          message: `Un créneau s'est libéré le ${freedSlotDateLabel} à ${freedSlotTime}. Voulez-vous avancer votre rendez-vous à cette heure ?`,
+          freed_appointment_id: cancelledAppt.id,
+          freed_slot_time: freedSlotTime,
+          freed_slot_date: freedSlotDate,
+          target_appointment_id: appt.id,       // RDV du client notifié
+        })
+      );
+      await Promise.allSettled(notifPromises);
+    }
 
     res.json({ message: 'Rendez-vous annule', appointment: data });
   } catch (err) {
@@ -410,6 +474,53 @@ router.post('/appointments/:id/confirm-payment', async (req, res) => {
   } catch (err) {
     console.error('confirm-payment error', err);
     res.status(500).json({ error: 'Impossible de confirmer le paiement' });
+  }
+});
+
+// ===== CLIENT ACCEPTE LE CRÉNEAU LIBÉRÉ =====
+router.post('/appointments/take-slot', async (req, res) => {
+  try {
+    const { target_appointment_id, freed_slot_date, freed_slot_time } = req.body;
+    if (!target_appointment_id || !freed_slot_date || !freed_slot_time) {
+      return res.status(400).json({ error: 'Données manquantes.' });
+    }
+
+    // Vérifier que ce RDV appartient au client connecté
+    const { data: appt, error: fetchErr } = await supabase
+      .from('Appointment')
+      .select('id, client_id, professional_id, date_heure')
+      .eq('id', target_appointment_id)
+      .single();
+
+    if (fetchErr || !appt) return res.status(404).json({ error: 'Rendez-vous introuvable.' });
+    if (appt.client_id !== req.user.id) return res.status(403).json({ error: 'Accès refusé.' });
+
+    const newDateTime = `${freed_slot_date}T${freed_slot_time}:00+01:00`;
+
+    const { error: updateErr } = await supabase
+      .from('Appointment')
+      .update({ date_heure: newDateTime })
+      .eq('id', target_appointment_id);
+
+    if (updateErr) throw updateErr;
+
+    await Promise.all([
+      createNotification({
+        userId: req.user.id,
+        type: 'appointment',
+        message: `Votre rendez-vous a été avancé au ${freed_slot_date} à ${freed_slot_time}.`,
+      }),
+      createNotification({
+        userId: appt.professional_id,
+        type: 'appointment',
+        message: `Un client a avancé son rendez-vous au ${freed_slot_date} à ${freed_slot_time}.`,
+      }),
+    ]);
+
+    res.json({ message: 'Rendez-vous avancé avec succès.' });
+  } catch (err) {
+    console.error('take-slot error', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
   }
 });
 
