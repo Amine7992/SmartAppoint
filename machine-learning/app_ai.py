@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, jsonify, request
 import joblib
 import numpy as np
@@ -45,6 +46,42 @@ def health():
         'model_path': str(MODEL_PATH),
         'feature_columns': FEATURE_COLUMNS,
     })
+
+
+@app.post('/predict/batch')
+def predict_batch():
+    try:
+        data = request.get_json(force=True) or {}
+        features_list = data.get('features_list')
+
+        if features_list is None or not isinstance(features_list, list):
+            return jsonify({
+                'status': 'error',
+                'message': "Le champ 'features_list' est requis et doit etre une liste."
+            }), 400
+
+        rows = [enrich_features(f) for f in features_list]
+        df_input = pd.DataFrame(rows, columns=FEATURE_COLUMNS)
+        
+        predictions = model.predict(df_input).tolist()
+        probabilities = model.predict_proba(df_input).tolist()
+
+        results = []
+        for i in range(len(predictions)):
+            results.append({
+                'prediction': int(predictions[i]),
+                'risk_score': float(probabilities[i][0]),
+                'attendance_score': float(probabilities[i][1]),
+                'confiance': float(max(probabilities[i]) * 100),
+                'features_used': rows[i],
+            })
+
+        return jsonify({
+            'status': 'success',
+            'results': results
+        })
+    except Exception as exc:
+        return jsonify({'status': 'error', 'message': str(exc)}), 400
 
 
 @app.post('/predict')

@@ -63,8 +63,8 @@ const getDistanceScore = (client, professional) => {
     const a =
       Math.sin(latDelta / 2) ** 2 +
       Math.cos(toRadians(clientLat)) *
-        Math.cos(toRadians(proLat)) *
-        Math.sin(lonDelta / 2) ** 2;
+      Math.cos(toRadians(proLat)) *
+      Math.sin(lonDelta / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return Number((earthRadiusKm * c).toFixed(4));
   }
@@ -107,32 +107,33 @@ const buildModelFeatures = ({ appointment, client, professional, history }) => {
   };
 };
 
-const predictRiskScore = async (features) => {
-  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+const predictRiskScoreBatch = async (featuresList) => {
+  if (!featuresList.length) return [];
+  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5001/predict/batch';
   const response = await fetch(aiServiceUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ features }),
+    body: JSON.stringify({ features_list: featuresList }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Service IA indisponible: ${response.status} ${errorText}`);
+    throw new Error(`Service IA (batch) indisponible: ${response.status} ${errorText}`);
   }
 
   const payload = await response.json();
   if (payload.status !== 'success') {
-    throw new Error(payload.message || 'Prediction IA invalide');
+    throw new Error(payload.message || 'Prediction IA (batch) invalide');
   }
 
-  return {
-    ai_score: Number(clamp(payload.risk_score ?? 0, 0, 1).toFixed(4)),
-    ai_prediction: payload.prediction,
-    ai_confidence: payload.confiance ?? null,
-    ai_attendance_score: payload.attendance_score ?? null,
-    ai_features: features,
+  return (payload.results || []).map((res, index) => ({
+    ai_score: Number(clamp(res.risk_score ?? 0, 0, 1).toFixed(4)),
+    ai_prediction: res.prediction,
+    ai_confidence: res.confiance ?? null,
+    ai_attendance_score: res.attendance_score ?? null,
+    ai_features: featuresList[index],
     ai_generated_at: new Date().toISOString(),
-  };
+  }));
 };
 
 router.get('/appointments', requireProfessional, async (req, res) => {
@@ -248,20 +249,20 @@ router.get('/appointments/risks', requireProfessional, async (req, res) => {
     }
 
     const professional = professionalRows[0] || null;
-    const riskAppointments = await Promise.all((appts || []).map(async (appt) => {
-      const client = clientsById[appt.client_id];
-      const features = buildModelFeatures({
-        appointment: appt,
-        client,
-        professional,
-        history: historyByClientId[appt.client_id] || [],
-      });
-      const prediction = await predictRiskScore(features);
 
-      return {
-        ...mapAppointment(appt, servicesById[appt.service_id], null, client),
-        ...prediction,
-      };
+    // Prepare features for batch prediction
+    const featuresList = (appts || []).map(appt => buildModelFeatures({
+      appointment: appt,
+      client: clientsById[appt.client_id],
+      professional,
+      history: historyByClientId[appt.client_id] || [],
+    }));
+
+    const predictions = await predictRiskScoreBatch(featuresList);
+
+    const riskAppointments = (appts || []).map((appt, i) => ({
+      ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
+      ...predictions[i],
     }));
 
     res.json(riskAppointments);
@@ -494,10 +495,10 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
       (services || []).map(s => [s.id, s.prix || 0])
     );
 
-    // === REVENUE CALCULATIONS (paid only) ===
+    // === REVENUE & COUNT CALCULATIONS (paid only) ===
     let totalRevenue = 0;
     const dailyStats = {};
-    const revenueByMonth = {};
+    const monthlyStats = {};
     const serviceCountMap = {};
 
     const now = new Date();
@@ -511,10 +512,13 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
       const dayKey = appt.date_heure.split('T')[0];
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-      dailyStats[dayKey] = dailyStats[dayKey] || { revenue: 0 };
+      dailyStats[dayKey] = dailyStats[dayKey] || { revenue: 0, count: 0 };
       dailyStats[dayKey].revenue += price;
+      dailyStats[dayKey].count += 1;
 
-      revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + price;
+      monthlyStats[monthKey] = monthlyStats[monthKey] || { revenue: 0, count: 0 };
+      monthlyStats[monthKey].revenue += price;
+      monthlyStats[monthKey].count += 1;
 
       if (appt.service_id) {
         serviceCountMap[appt.service_id] = (serviceCountMap[appt.service_id] || 0) + 1;
@@ -529,21 +533,27 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
       .filter(([date]) => new Date(date) >= thirtyDaysAgo)
       .map(([date, data]) => ({
         date,
-        revenue: Number(data.revenue.toFixed(2))
+        revenue: Number(data.revenue.toFixed(2)),
+        count: data.count
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Monthly
-    const monthly = Object.entries(revenueByMonth)
-      .map(([month, revenue]) => ({ month, revenue: Number(revenue.toFixed(2)) }))
+    const monthly = Object.entries(monthlyStats)
+      .map(([month, data]) => ({ 
+        month, 
+        revenue: Number(data.revenue.toFixed(2)),
+        count: data.count 
+      }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
-    const thisMonthRevenue = revenueByMonth[thisMonthKey] || 0;
-    const lastMonthRevenue = revenueByMonth[lastMonthKey] || 0;
+    const thisMonthRevenue = monthlyStats[thisMonthKey]?.revenue || 0;
+    const lastMonthRevenue = monthlyStats[lastMonthKey]?.revenue || 0;
+
 
     const revenueGrowth = lastMonthRevenue > 0
       ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
@@ -559,7 +569,7 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
 
     // 2. No-show rate
     const totalAppts = allAppts?.length || 0;
-    const noShowCount = (allAppts || []).filter(a => 
+    const noShowCount = (allAppts || []).filter(a =>
       String(a.status || '').toLowerCase() === 'cancelled' ||
       String(a.status || '').toLowerCase() === 'no_show'
     ).length;
