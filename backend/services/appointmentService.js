@@ -67,20 +67,6 @@ const cancelExpiredAppointments = async () => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────
-//  NOUVELLE FONCTION : Envoyer un rappel 2h avant le RDV
-//
-//  Fonctionnement :
-103: //  1. On calcule la fenêtre : [maintenant + 1h55, maintenant + 2h05]
-104: //     → cela représente les RDVs qui auront lieu dans ~2 heures
-105: //     → la fenêtre de 10 minutes compense le fait que le cron
-106: //       tourne toutes les 15 minutes (on évite les doublons
-107: //       grâce à la colonne reminder_sent)
-108: //  2. On filtre uniquement les RDVs 'confirmed' sans rappel déjà envoyé
-109: //  3. On envoie une notification à chaque client concerné
-110: //  4. On marque le RDV avec reminder_sent = true pour ne pas
-111: //     renvoyer le rappel au prochain passage du cron
-112: // ─────────────────────────────────────────────────────────────
 const sendAppointmentReminders = async () => {
   try {
     const now = new Date();

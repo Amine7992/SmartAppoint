@@ -5,6 +5,7 @@ const { auth } = require('../middleware/auth');
 const { mapService, mapAppointment } = require('./helpers');
 const { createNotification } = require('../services/notificationService');
 const { calculateTieredTax } = require('../services/adminService');
+const { getProfessionalSchedule, updateProfessionalSchedule } = require('../services/proScheduleStore');
 
 router.use(auth);
 
@@ -149,18 +150,26 @@ router.get('/appointments', requireProfessional, async (req, res) => {
     const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
     const clientIds = [...new Set((appts || []).map((a) => a.client_id).filter(Boolean))];
 
-    const services = await fetchServicesByIds(serviceIds);
-    const clients = await fetchClientsByIds(clientIds);
+    const [services, clients] = await Promise.all([
+      fetchServicesByIds(serviceIds),
+      fetchClientsByIds(clientIds)
+    ]);
 
     const servicesById = Object.fromEntries((services || []).map((svc) => [svc.id, svc]));
     const clientsById = Object.fromEntries((clients || []).map((cli) => [cli.id, cli]));
 
     const formatted = (appts || []).map((appt) => {
       const dt = new Date(appt.date_heure);
+      const YYYY = dt.getFullYear();
+      const MM = String(dt.getMonth() + 1).padStart(2, '0');
+      const DD = String(dt.getDate()).padStart(2, '0');
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mm = String(dt.getMinutes()).padStart(2, '0');
+
       return {
         ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
-        date: appt.date_heure.split('T')[0],
-        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':'),
+        date: `${YYYY}-${MM}-${DD}`,
+        time: `${hh}:${mm}`,
       };
     });
 
@@ -173,16 +182,17 @@ router.get('/appointments', requireProfessional, async (req, res) => {
 
 router.get('/appointments/today', requireProfessional, async (req, res) => {
   try {
-    const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+    // Robust "today" range: from 00:00:00 to 23:59:59 in the server's local day
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
 
     const { data: appts, error } = await supabase
       .from('Appointment')
       .select('*')
       .eq('professional_id', req.user.id)
       .gte('date_heure', start)
-      .lt('date_heure', end)
+      .lte('date_heure', end)
       .order('date_heure', { ascending: true });
 
     if (error) throw error;
@@ -190,19 +200,32 @@ router.get('/appointments/today', requireProfessional, async (req, res) => {
     const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
     const clientIds = [...new Set((appts || []).map((a) => a.client_id).filter(Boolean))];
 
-    const services = await fetchServicesByIds(serviceIds);
-    const clients = await fetchClientsByIds(clientIds);
+    const [services, clients] = await Promise.all([
+      fetchServicesByIds(serviceIds),
+      fetchClientsByIds(clientIds)
+    ]);
+
     const servicesById = Object.fromEntries((services || []).map((svc) => [svc.id, svc]));
     const clientsById = Object.fromEntries((clients || []).map((cli) => [cli.id, cli]));
 
-    res.json((appts || []).map((appt) => {
+    const formatted = (appts || []).map((appt) => {
       const dt = new Date(appt.date_heure);
+      // Use toLocalDateTime helper logic for consistency if needed, 
+      // but here we manually format to match ProDashboard.jsx expectations
+      const YYYY = dt.getFullYear();
+      const MM = String(dt.getMonth() + 1).padStart(2, '0');
+      const DD = String(dt.getDate()).padStart(2, '0');
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mm = String(dt.getMinutes()).padStart(2, '0');
+
       return {
         ...mapAppointment(appt, servicesById[appt.service_id], null, clientsById[appt.client_id]),
-        date: appt.date_heure.split('T')[0],
-        time: dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace('h', ':'),
+        date: `${YYYY}-${MM}-${DD}`,
+        time: `${hh}:${mm}`,
       };
-    }));
+    });
+
+    res.json(formatted);
   } catch (err) {
     console.error('GET /pro/appointments/today error', err);
     res.status(500).json({ error: "Impossible de recuperer les rendez-vous d'aujourd'hui" });
@@ -466,30 +489,24 @@ router.get('/stats/detailed', requireProfessional, async (req, res) => {
 
     const proId = req.user.id;
 
-    // 1. Get ALL appointments (for unique clients + no-show rate)
-    const { data: allAppts, error: allError } = await supabase
-      .from('Appointment')
-      .select('client_id, status, payment_status, date_heure')
-      .eq('professional_id', proId);
+    // Combine DB queries to reduce round-trips
+    const [ { data: allAppts, error: allError }, { data: services, error: svcError } ] = await Promise.all([
+      supabase
+        .from('Appointment')
+        .select('client_id, status, payment_status, date_heure, service_id')
+        .eq('professional_id', proId),
+      supabase
+        .from('Service')
+        .select('id, nom, prix')
+        .eq('professional_id', proId)
+    ]);
 
     if (allError) throw allError;
+    if (svcError) throw svcError;
 
-    // 2. Get only paid appointments (for revenue)
-    const { data: paidAppts, error: paidError } = await supabase
-      .from('Appointment')
-      .select('service_id, payment_status, date_heure')
-      .eq('professional_id', proId)
-      .eq('payment_status', 'paid');
-
-    if (paidError) throw paidError;
-
+    // Filter paid appointments in memory to avoid an extra DB call
+    const paidAppts = (allAppts || []).filter(a => a.payment_status === 'paid');
     console.log(`📊 Found ${allAppts?.length || 0} total appointments, ${paidAppts?.length || 0} paid`);
-
-    // Get services for revenue calculation
-    const { data: services } = await supabase
-      .from('Service')
-      .select('id, nom, prix')
-      .eq('professional_id', proId);
 
     const servicesPriceMap = Object.fromEntries(
       (services || []).map(s => [s.id, s.prix || 0])

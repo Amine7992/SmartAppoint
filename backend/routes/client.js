@@ -124,11 +124,14 @@ router.get('/appointments', async (req, res) => {
 
     const serviceIds = [...new Set((appts || []).map((a) => a.service_id).filter(Boolean))];
     const proIds = [...new Set((appts || []).map((a) => a.professional_id).filter(Boolean))];
-    const serviceRows = await fetchServicesByIds(serviceIds);
-    const proRows = await fetchUsersByIds(proIds);
-    const clientRows = await fetchUsersByIds([req.user.id]);
-    const client = clientRows[0] || { nom: '' };
 
+    const [serviceRows, proRows, clientRows] = await Promise.all([
+      fetchServicesByIds(serviceIds),
+      fetchUsersByIds(proIds),
+      fetchUsersByIds([req.user.id])
+    ]);
+
+    const client = clientRows[0] || { nom: '' };
     const servicesById = Object.fromEntries((serviceRows || []).map((svc) => [svc.id, svc]));
     const prosById = Object.fromEntries((proRows || []).map((pro) => [pro.id, pro]));
 
