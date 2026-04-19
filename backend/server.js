@@ -4,17 +4,24 @@ const cors    = require('cors');
 const helmet  = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path    = require('path');
+const cron    = require('node-cron');
 const aiRoutes = require('./routes/ai');
-
 const authRoutes              = require('./routes/auth');
 const clientRoutes            = require('./routes/client');
 const proRoutes               = require('./routes/pro');
 const notificationsRoutes     = require('./routes/notifications');
 const userRoutes              = require('./routes/users');
 const appointmentRatingRouter = require('./routes/appointment');
-const adminRoutes             = require('./routes/admin'); // 1. Importer les routes admin
+const adminRoutes             = require('./routes/admin');
 const { router: specialitesRoutes } = require('./routes/specialites');
 
+const supabase = require('./config/supabase');
+
+// ── Importer les deux fonctions du service ──────────────────
+const {
+  cancelExpiredAppointments,
+  sendAppointmentReminders,
+} = require('./services/appointmentService');
 
 const app = express();
 const allowedOrigins = String(process.env.CORS_ORIGIN || '')
@@ -55,9 +62,7 @@ const adminLimiter = rateLimit({
 });
 
 app.disable('x-powered-by');
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
@@ -66,33 +71,21 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ── Routes ────────────────────────────────────────────────
 app.use('/api/auth',         authLimiter, authRoutes);
 app.use('/api',              clientRoutes);
-app.use('/api', specialitesRoutes);
+app.use('/api',              specialitesRoutes);
 app.use('/api',              userRoutes);
 app.use('/api',              notificationsRoutes);
 app.use('/api/pro',          proRoutes);
 app.use('/api/appointments', appointmentRatingRouter);
-app.use('/api/admin',        adminLimiter, adminRoutes); // 2. Enregistrer avec le préfixe /api/admin
-app.use('/api/ai', aiRoutes);
-// ── Debug routes ─────────────────────────────────────────
+app.use('/api/admin',        adminLimiter, adminRoutes);
+app.use('/api/ai',           aiRoutes);
+
 if (process.env.NODE_ENV !== 'production') {
   app.get('/__debug_routes', (req, res) => {
     res.json(app._router.stack
       .filter((layer) => layer.route || layer.name === 'router')
       .map((layer) => {
-        if (layer.route) {
-          return {
-            type:    'route',
-            path:    layer.route.path,
-            methods: Object.keys(layer.route.methods),
-          };
-        }
-        const prefix = layer.regexp.toString()
-          .replace('/^\\/api\\/admin\\/?(?=\\/|$)/i', '/api/admin')
-          .replace('/^\\//i', '/');
-        return {
-          type:   'router',
-          path_prefix: prefix,
-        };
+        if (layer.route) return { type: 'route', path: layer.route.path, methods: Object.keys(layer.route.methods) };
+        return { type: 'router' };
       })
     );
   });
@@ -100,21 +93,31 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.use((err, req, res, next) => {
   if (err?.type === 'entity.too.large') {
-    return res.status(413).json({
-      error: 'Image trop lourde pour le serveur. Choisissez un fichier plus petit.',
-    });
+    return res.status(413).json({ error: 'Image trop lourde. Choisissez un fichier plus petit.' });
   }
-
   if (err) {
     console.error('Unhandled server error', err);
     return res.status(500).json({ error: 'Erreur serveur interne' });
   }
-
   next();
 });
 
+// ── CRON 1 : Annuler les RDVs expirés — toutes les 10 minutes ──
+cron.schedule('*/10 * * * *', () => {
+  console.log('CRON 1: Vérification des rendez-vous expirés...');
+  cancelExpiredAppointments();
+});
+
+// ── CRON 2 : Rappels 2h avant le RDV — toutes les 15 minutes ──
+cron.schedule('*/15 * * * *', () => {
+  console.log('CRON 2: Vérification des rappels de rendez-vous...');
+  sendAppointmentReminders();
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(` Serveur SmartAppoint opérationnel sur le port ${PORT}`);
-  console.log(`  Module Admin activé sur /api/admin`);
+app.listen(PORT, async () => {
+  console.log(`Serveur SmartAppoint opérationnel sur le port ${PORT}`);
+  console.log(`Module Admin activé sur /api/admin`);
+  console.log(`Rappels automatiques activés (toutes les 15 min)`);
+  await cancelExpiredAppointments();
 });
