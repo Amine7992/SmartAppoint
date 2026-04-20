@@ -206,6 +206,71 @@ const countAppointmentsByProfessional = (appointments = []) => {
   return counts;
 };
 
+const normalizeAppointmentStatus = (status) =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const computeNoShowRate = (appointments = []) => {
+  const successStatuses = new Set([
+    'past',
+    'completed',
+    'complete',
+    'done',
+    'finished',
+    'termine',
+    'terminee',
+    'paid',
+  ]);
+
+  const noShowStatuses = new Set([
+    'cancelled',
+    'canceled',
+    'annule',
+    'annulee',
+    'no_show',
+    'noshow',
+    'no-show',
+    'absent',
+    'missed',
+  ]);
+
+  const pastConfirmedStatuses = new Set(['confirmed', 'confirme']);
+  const now = new Date();
+  let closedAppointments = 0;
+  let noShowAppointments = 0;
+
+  for (const appointment of appointments) {
+    const normalizedStatus = normalizeAppointmentStatus(appointment?.status);
+    const appointmentDate = appointment?.date_heure ? new Date(appointment.date_heure) : null;
+    const isPastAppointment =
+      appointmentDate &&
+      !Number.isNaN(appointmentDate.getTime()) &&
+      appointmentDate < now;
+
+    if (successStatuses.has(normalizedStatus)) {
+      closedAppointments += 1;
+      continue;
+    }
+
+    if (noShowStatuses.has(normalizedStatus)) {
+      closedAppointments += 1;
+      noShowAppointments += 1;
+      continue;
+    }
+
+    if (isPastAppointment && pastConfirmedStatuses.has(normalizedStatus)) {
+      closedAppointments += 1;
+    }
+  }
+
+  return closedAppointments
+    ? Math.round((noShowAppointments / closedAppointments) * 100)
+    : 0;
+};
+
 const getAdminStats = async () => {
   const [users, appointments, config] = await Promise.all([
     fetchUsers(),
@@ -235,9 +300,20 @@ const getAdminStats = async () => {
     return date >= startOfLastMonth && date < endOfLastMonth;
   });
 
-  const noShowStatuses = new Set(['no_show', 'noshow', 'absent']);
-  const noShowCount = appointments.filter((a) => noShowStatuses.has(String(a.status || '').toLowerCase())).length;
-  const noshowRate = appointments.length ? Math.round((noShowCount / appointments.length) * 100) : 0;
+  const noShowStatuses = new Set([
+    'cancelled',
+    'annule',
+    'annulé',
+    'no_show',
+    'noshow',
+    'no-show',
+    'absent',
+  ]);
+  const noShowCount = appointments.filter((a) => {
+    const normalizedStatus = String(a.status || '').trim().toLowerCase();
+    return noShowStatuses.has(normalizedStatus);
+  }).length;
+  const noshowRate = computeNoShowRate(appointments);
 
   let monthlyGrowthPct = 0;
   if (appointmentsLastMonth.length > 0) {

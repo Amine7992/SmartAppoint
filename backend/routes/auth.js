@@ -1,8 +1,74 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 const router = express.Router();
 const supabase = require('../config/supabase');
 const { enrichProfileWithCoordinates } = require('../API/gecorder');
 const { readAdminConfig } = require('../services/adminConfigStore');
+
+const AVATAR_BUCKET = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
+const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
+const STORAGE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+const LOCAL_UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'avatars');
+
+const getStorageAdminClient = () =>
+  createClient(process.env.SUPABASE_URL, STORAGE_SERVICE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+
+const getExtensionFromMimeType = (mimeType) => ({
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}[mimeType] || null);
+
+const ensureLocalAvatarDir = (userId) => {
+  const userDir = path.join(LOCAL_UPLOADS_DIR, userId);
+  fs.mkdirSync(userDir, { recursive: true });
+  return userDir;
+};
+
+const saveAvatarLocally = ({ userId, extension, fileBuffer }) => {
+  const userDir = ensureLocalAvatarDir(userId);
+  const filename = `profile.${extension}`;
+  const absolutePath = path.join(userDir, filename);
+  fs.writeFileSync(absolutePath, fileBuffer);
+  return `/uploads/avatars/${userId}/${filename}`;
+};
+
+const uploadRegistrationAvatar = async ({ userId, imageBase64, contentType }) => {
+  const extension = getExtensionFromMimeType(contentType);
+  if (!extension) {
+    throw new Error('Format image non supporte. Utilisez JPG, PNG ou WEBP.');
+  }
+
+  const base64Payload = String(imageBase64).includes(',') ? String(imageBase64).split(',').pop() : String(imageBase64);
+  const fileBuffer = Buffer.from(base64Payload, 'base64');
+
+  if (!fileBuffer.length) {
+    throw new Error('Image invalide');
+  }
+
+  if (fileBuffer.length > MAX_AVATAR_SIZE_BYTES) {
+    throw new Error('Image trop volumineuse. Maximum 2 Mo.');
+  }
+
+  const avatarPath = `${userId}/profile.${extension}`;
+
+  try {
+    const storageClient = getStorageAdminClient();
+    const { error: uploadError } = await storageClient.storage
+      .from(AVATAR_BUCKET)
+      .upload(avatarPath, fileBuffer, { contentType, upsert: true });
+    if (uploadError) throw uploadError;
+    const { data: publicUrlData } = storageClient.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+    return publicUrlData?.publicUrl || null;
+  } catch (uploadError) {
+    console.warn('Supabase avatar upload failed during registration, using local fallback:', uploadError.message);
+    return saveAvatarLocally({ userId, extension, fileBuffer });
+  }
+};
 
 const mapUser = (userData) => ({
   ...userData,
@@ -22,6 +88,7 @@ router.post('/register', async (req, res) => {
     name, prenom, email, password, role, phone,
     cin, adresse, city,
     specialite, description,
+    avatar_base64, avatar_content_type,
   } = req.body;
 
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
@@ -67,6 +134,14 @@ router.post('/register', async (req, res) => {
       role,
       last_login_ip: clientIp,
     };
+
+    if (avatar_base64 && avatar_content_type) {
+      baseUserRow.avatar_url = await uploadRegistrationAvatar({
+        userId: authData.user.id,
+        imageBase64: avatar_base64,
+        contentType: avatar_content_type,
+      });
+    }
 
     if (role === 'professional') {
       baseUserRow.specialite = specialite || null;

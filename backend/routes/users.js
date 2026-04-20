@@ -104,7 +104,10 @@ router.put('/users/profile', async (req, res) => {
     if (name !== undefined && nom === undefined) updates.nom = name || null;
     if (email !== undefined) updates.email = email || null;
     if (phone !== undefined) updates.phone = phone || null;
-    if (specialite !== undefined) {updates.categorie = getCategoryFromSpecialite(specialite) || null;}
+    if (specialite !== undefined) {
+      updates.specialite = specialite || null;
+      updates.categorie = getCategoryFromSpecialite(specialite) || null;
+    }
     if (city !== undefined) updates.city = city || null;
     if (adresse !== undefined) updates.adresse = adresse || null;
     if (description !== undefined) updates.description = description || null;
