@@ -6,6 +6,7 @@ import UserAvatar from '../../components/common/UserAvatar';
 import VerificationBadge from '../../components/common/VerificationBadge';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
+import { formatNotificationMessage } from '../../utils/notificationFormat';
 import './Dashboard.css';
 
 const StatusBadge = ({ status }) => {
@@ -217,7 +218,7 @@ const ClientDashboard = () => {
                             {notificationIcons[notif.type] || <Info size={15} />}
                           </span>
                           <span className="client-notif-item-body">
-                            <span className="client-notif-item-message">{notif.message}</span>
+                            <span className="client-notif-item-message">{formatNotificationMessage(notif.message)}</span>
                             <span className="client-notif-item-time">{timeAgo(notif.created_at)}</span>
                           </span>
                           {!notif.read ? <span className="client-notif-item-dot" /> : null}
@@ -331,7 +332,7 @@ const ClientDashboard = () => {
         </section>
 
         {/* Favorites widget */}
-        <section className="two-col" style={{ marginTop: 0 }}>
+        <section className="two-col" style={{ marginTop: 20 }}>
           <div className="panel" style={{ gridColumn: '1 / -1' }}>
             <div className="panel-header">
               <h2 className="panel-title">

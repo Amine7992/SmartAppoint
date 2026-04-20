@@ -4,6 +4,7 @@ import { Clock, Bell, Calendar, AlertCircle, Info, CheckCheck } from 'lucide-rea
 import ProSidebar from '../../components/pro/ProSidebar';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
+import { formatNotificationMessage } from '../../utils/notificationFormat';
 import './ProDashboard.css';
 
 const EmptyTimeline = () => (
@@ -234,7 +235,7 @@ const ProDashboard = () => {
                             {notificationIcons[notif.type] || <Info size={15} />}
                           </span>
                           <span className="pro-notif-item-body">
-                            <span className="pro-notif-item-message">{notif.message}</span>
+                            <span className="pro-notif-item-message">{formatNotificationMessage(notif.message)}</span>
                             <span className="pro-notif-item-time">{timeAgo(notif.created_at)}</span>
                           </span>
                           {!notif.read ? <span className="pro-notif-item-dot" /> : null}

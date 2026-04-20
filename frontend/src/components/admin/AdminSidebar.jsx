@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Briefcase, Calendar, BarChart2, Settings, LogOut, UserCircle2 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
+import '../common/Sidebar.css';
 import './AdminSidebar.css';
 
 const AdminSidebar = () => {
@@ -19,13 +20,13 @@ const AdminSidebar = () => {
   return (
     <aside className="admin-sidebar">
       {/* SECTION LOGO MISE À JOUR */}
-      <div className="admin-sidebar-brand">
-        <div className="admin-sidebar-brand-mark">
-          <img src="/logo2.png" alt="SmartAppoint" className="admin-sidebar-logo" />
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-mark">
+          <img src="/logo2.png" alt="SmartAppoint" className="sidebar-logo" />
         </div>
-        <div className="admin-sidebar-brand-copy">
-          <span className="admin-sidebar-brand-title">SmartAppoint</span>
-          <span className="admin-brand-sub">Administration</span>
+        <div className="sidebar-brand-copy">
+          <span className="sidebar-brand-title">SmartAppoint</span>
+          <span className="brand-sub">Administration</span>
         </div>
       </div>
 

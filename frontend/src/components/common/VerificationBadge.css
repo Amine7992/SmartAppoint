@@ -16,6 +16,7 @@
 .verification-badge.compact {
     width: 20px;
     height: 20px;
+    transform: translateY(-1px);
 }
 
 .verification-badge svg {

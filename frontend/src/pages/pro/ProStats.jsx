@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Users, Calendar, Star, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Calendar, Star, DollarSign, Printer, FileText } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -57,6 +57,12 @@ const ProStats = () => {
   })) || [];
 
   const growthPositive = (stats?.revenue_growth ?? 0) >= 0;
+  const generatedAt = new Date().toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const handlePrint = () => window.print();
 
   return (
     <div className="pro-layout">
@@ -64,6 +70,12 @@ const ProStats = () => {
       <main className="pro-main">
         <header className="pro-topbar">
           <h1 className="pro-page-title">Statistiques</h1>
+          <div className="stats-topbar-actions">
+            <button type="button" className="stats-print-btn" onClick={handlePrint}>
+              <Printer size={16} />
+              Imprimer le rapport
+            </button>
+          </div>
         </header>
 
         {loading ? (
@@ -78,6 +90,25 @@ const ProStats = () => {
           </div>
         ) : (
           <>
+            <section className="stats-report-head">
+              <div className="stats-report-copy">
+                <span className="stats-report-kicker">
+                  <FileText size={14} />
+                  Rapport professionnel
+                </span>
+                <h2>Suivi de l activite et performance du professionnel</h2>
+                <p>
+                  Ce rapport rassemble les indicateurs essentiels sur les rendez-vous,
+                  les clients, les revenus et le taux de no-show afin de faciliter
+                  le suivi de votre activite.
+                </p>
+              </div>
+              <div className="stats-report-meta">
+                <span>Genere le {generatedAt}</span>
+                <strong>{stats.total_appointments ?? 0} rendez-vous analyses</strong>
+              </div>
+            </section>
+
             {/* Stats cards */}
             <div className="pro-stats-grid" style={{ marginBottom: 20 }}>
               <div className="pro-stat-card">

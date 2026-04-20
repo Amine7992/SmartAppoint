@@ -3,6 +3,7 @@ import { LayoutDashboard, Calendar, Users, Briefcase, BarChart2, AlertTriangle, 
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
 import VerificationBadge from '../common/VerificationBadge';
+import '../common/Sidebar.css';
 import './ProSidebar.css';
 
 const ProSidebar = () => {
@@ -19,13 +20,13 @@ const ProSidebar = () => {
 
   return (
     <aside className="pro-sidebar">
-      <div className="pro-sidebar-brand">
-        <div className="pro-sidebar-brand-mark">
-          <img src="/logo2.png" alt="SmartAppoint" className="pro-sidebar-logo" />
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-mark">
+          <img src="/logo2.png" alt="SmartAppoint" className="sidebar-logo" />
         </div>
-        <div className="pro-sidebar-brand-copy">
-          <span className="pro-sidebar-brand-title">SmartAppoint</span>
-          <span className="pro-brand-sub">Espace pro</span>
+        <div className="sidebar-brand-copy">
+          <span className="sidebar-brand-title">SmartAppoint</span>
+          <span className="brand-sub">Espace pro</span>
         </div>
       </div>
 

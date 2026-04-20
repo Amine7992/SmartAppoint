@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Calendar, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import api from '../../api/axios';
+import { formatNotificationMessage } from '../../utils/notificationFormat';
 import './Notifications.css';
 
 // ── 1. Ajout de slot_available dans iconMap ──
@@ -124,7 +125,7 @@ const Notifications = () => {
                   </div>
 
                   <div className="notif-body">
-                    <p className="notif-message">{n.message}</p>
+                    <p className="notif-message">{formatNotificationMessage(n.message)}</p>
                     <p className="notif-time">{timeAgo(n.created_at)}</p>
 
                     {/* ── 4. Bouton "Oui" uniquement pour slot_available non encore actionné ── */}

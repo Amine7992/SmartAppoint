@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Calendar, AlertCircle, Info } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import api from '../../api/axios';
+import { formatNotificationMessage } from '../../utils/notificationFormat';
 import '../client/Notifications.css';
 
 const iconMap = {
@@ -98,7 +99,7 @@ const ProNotifications = () => {
                     {iconMap[n.type] || <Info size={16} />}
                   </div>
                   <div className="notif-body">
-                    <p className="notif-message">{n.message}</p>
+                    <p className="notif-message">{formatNotificationMessage(n.message)}</p>
                     <p className="notif-time">{timeAgo(n.created_at)}</p>
                   </div>
                   {!n.read ? <span className="notif-dot-unread" /> : null}

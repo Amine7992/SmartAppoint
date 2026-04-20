@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, Mail, Phone, Lock, Save, Briefcase } from 'lucide-react';
+import { User, Mail, Phone, Lock, Save, Briefcase, Shield, MapPin, FileText } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import VerificationBadge from '../../components/common/VerificationBadge';
 import useAuth from '../../hooks/useAuth';
@@ -7,17 +7,46 @@ import api from '../../api/axios';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
 import { fileToDataUrl } from '../../utils/file';
 import '../client/Profile.css';
+import './ProDashboard.css';
+
+const SPECIALITY_OPTIONS = [
+  'Medecin generaliste',
+  'Dentiste',
+  'Kinesitherapeute',
+  'Psychologue',
+  'Developpeur web',
+  'Data scientist',
+  'Designer UX/UI',
+  'DevOps',
+  'Comptable',
+  'Conseiller financier',
+  'Avocat',
+  'Notaire',
+  'Professeur',
+  'Formateur professionnel',
+  'Coiffeur',
+  'Photographe',
+  'Ingenieur mecanique',
+  'Electricien',
+  'Chauffeur',
+  'Logisticien',
+];
+
+const getInitialForm = (user) => ({
+  nom: user?.nom || '',
+  prenom: user?.prenom || '',
+  email: user?.email || '',
+  phone: user?.phone || '',
+  specialite: user?.specialty || user?.specialite || '',
+  city: user?.city || '',
+  adresse: user?.adresse || '',
+  description: user?.description || '',
+});
 
 const ProProfile = () => {
   const { user, updateUser } = useAuth();
 
-  const [form, setForm] = useState({
-    nom: user?.nom || '',
-    prenom: user?.prenom || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    specialite: user?.specialty || user?.specialite || '',
-  });
+  const [form, setForm] = useState(getInitialForm(user));
 
   const [pwdForm, setPwdForm] = useState({
     current: '',
@@ -33,6 +62,10 @@ const ProProfile = () => {
   const [isVerified, setIsVerified] = useState(
     Boolean(user?.verified || ['validated', 'valide'].includes(String(user?.validation || user?.status || '').toLowerCase()))
   );
+
+  useEffect(() => {
+    setForm(getInitialForm(user));
+  }, [user]);
 
   useEffect(() => {
     let mounted = true;
@@ -136,24 +169,28 @@ const ProProfile = () => {
   const avatarSrc = getAvatarSrc(user);
 
   return (
-    <div className="dashboard-layout">
+    <div className="pro-layout">
       <ProSidebar />
-      <main className="dashboard-main">
-        <header className="topbar">
-          <h1 className="page-title">Mon profil</h1>
+      <main className="pro-main">
+        <header className="pro-topbar">
+          <h1 className="pro-page-title">Mon profil</h1>
         </header>
 
         <div className="profile-grid">
           <div className="profile-avatar-card">
-            <div className="profile-big-avatar" style={{ background: '#0f766e' }}>
+            <div className="profile-big-avatar profile-big-avatar-pro">
               {avatarSrc ? <img src={avatarSrc} alt={user?.name || 'Avatar'} /> : initials}
             </div>
+            <p className="profile-avatar-name">{user?.name || '-'}</p>
             <div className="profile-avatar-name-row">
-              <p className="profile-avatar-name">{user?.name || '-'}</p>
+              <p className="profile-avatar-role profile-avatar-role-pro">Professionnel</p>
               <VerificationBadge verified={isVerified} compact />
             </div>
-            <p className="profile-avatar-role" style={{ background: '#ccfbf1', color: '#115e59' }}>Professionnel</p>
+            <p className="profile-avatar-email">{form.specialite || 'Specialite non renseignee'}</p>
             <p className="profile-avatar-email">{user?.email || '-'}</p>
+            <p className="profile-avatar-current-photo">
+              {avatarSrc ? 'Photo actuelle visible' : 'Aucune photo actuellement'}
+            </p>
             <label className="profile-avatar-upload">
               {uploadingAvatar ? 'Televersement...' : 'Ajouter une photo'}
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarChange} />
@@ -163,44 +200,41 @@ const ProProfile = () => {
 
           <div className="profile-section-card">
             <h2 className="profile-section-title"><User size={16} /> Informations personnelles</h2>
-            <div className="profile-field"><label className="profile-label">Nom</label><input className="profile-input" name="nom" value={form.nom} onChange={handleChange} placeholder="Votre nom" /></div>
-            <div className="profile-field"><label className="profile-label">Prenom</label><input className="profile-input" name="prenom" value={form.prenom} onChange={handleChange} placeholder="Votre prenom" /></div>
+            <div className="profile-field"><label className="profile-label">Nom</label><input className="profile-input" name="nom" value={form.nom} onChange={handleChange} placeholder="Nom professionnel" /></div>
+            <div className="profile-field"><label className="profile-label">Prenom</label><input className="profile-input" name="prenom" value={form.prenom} onChange={handleChange} placeholder="Prenom professionnel" /></div>
             <div className="profile-field"><label className="profile-label"><Mail size={13} /> Adresse email</label><input className="profile-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder="pro@smartappoint.com" /></div>
             <div className="profile-field"><label className="profile-label"><Phone size={13} /> Telephone</label><input className="profile-input" name="phone" value={form.phone} onChange={handleChange} placeholder="+216 XX XXX XXX" /></div>
             <div className="profile-field">
-            <label className="profile-label"><Briefcase size={13} /> Spécialité</label>
-            <input
-              className="profile-input"
-              name="specialite"
-              value={form.specialite}
-              onChange={handleChange}
-              placeholder="Ex: Médecin généraliste, Développeur web, Coiffeur..."
-              list="specialites-list"
-            />
-            <datalist id="specialites-list">
-              <option value="Médecin généraliste" />
-              <option value="Dentiste" />
-              <option value="Kinésithérapeute" />
-              <option value="Psychologue" />
-              <option value="Développeur web" />
-              <option value="Data scientist" />
-              <option value="Designer UX/UI" />
-              <option value="DevOps" />
-              <option value="Comptable" />
-              <option value="Conseiller financier" />
-              <option value="Avocat" />
-              <option value="Notaire" />
-              <option value="Professeur" />
-              <option value="Formateur professionnel" />
-              <option value="Coiffeur" />
-              <option value="Photographe" />
-              <option value="Ingénieur mécanique" />
-              <option value="Électricien" />
-              <option value="Chauffeur" />
-              <option value="Logisticien" />
-            </datalist> </div>            
-          {msgInfo && <p className={`profile-msg ${msgInfo.type}`}>{msgInfo.text}</p>}
-            <button className="profile-save-btn" style={{ background: '#0f766e' }} onClick={handleSaveInfo} disabled={savingInfo}><Save size={14} />{savingInfo ? 'Enregistrement...' : 'Enregistrer les modifications'}</button>
+              <label className="profile-label"><Briefcase size={13} /> Specialite</label>
+              <input
+                className="profile-input"
+                name="specialite"
+                value={form.specialite}
+                onChange={handleChange}
+                placeholder="Ex: Medecin generaliste, Developpeur web, Coiffeur..."
+                list="specialites-list"
+              />
+              <datalist id="specialites-list">
+                {SPECIALITY_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </div>
+            <div className="profile-field"><label className="profile-label"><MapPin size={13} /> Ville</label><input className="profile-input" name="city" value={form.city} onChange={handleChange} placeholder="Ex: Tunis, Sfax, Sousse..." /></div>
+            <div className="profile-field"><label className="profile-label"><MapPin size={13} /> Adresse</label><input className="profile-input" name="adresse" value={form.adresse} onChange={handleChange} placeholder="Adresse professionnelle" /></div>
+            <div className="profile-field">
+              <label className="profile-label"><FileText size={13} /> Description</label>
+              <textarea
+                className="profile-input profile-textarea"
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="Presentez votre activite, vos services ou votre experience."
+                rows="4"
+              />
+            </div>
+            {msgInfo && <p className={`profile-msg ${msgInfo.type}`}>{msgInfo.text}</p>}
+            <button className="profile-save-btn profile-save-btn-pro" onClick={handleSaveInfo} disabled={savingInfo}><Save size={14} />{savingInfo ? 'Enregistrement...' : 'Enregistrer les modifications'}</button>
           </div>
 
           <div className="profile-section-card">
@@ -209,7 +243,7 @@ const ProProfile = () => {
             <div className="profile-field"><label className="profile-label">Nouveau mot de passe</label><input className="profile-input" name="newPwd" type="password" value={pwdForm.newPwd} onChange={handlePwdChange} placeholder="********" /></div>
             <div className="profile-field"><label className="profile-label">Confirmer le mot de passe</label><input className="profile-input" name="confirm" type="password" value={pwdForm.confirm} onChange={handlePwdChange} placeholder="********" /></div>
             {msgPwd && <p className={`profile-msg ${msgPwd.type}`}>{msgPwd.text}</p>}
-            <button className="profile-save-btn" style={{ background: '#0f766e' }} onClick={handleSavePwd} disabled={savingPwd}><Save size={14} />{savingPwd ? 'Modification...' : 'Modifier le mot de passe'}</button>
+            <button className="profile-save-btn profile-save-btn-pro" onClick={handleSavePwd} disabled={savingPwd}><Shield size={14} />{savingPwd ? 'Modification...' : 'Modifier le mot de passe'}</button>
           </div>
         </div>
       </main>

@@ -603,3 +603,147 @@
   background: #fee2e2;
   border-color: #fca5a5;
 }
+
+/* ===== ENHANCED UI ===== */
+
+:root {
+    --client-bg: linear-gradient(180deg, #f4f8fc 0%, #edf3f9 100%);
+    --client-surface: rgba(255, 255, 255, 0.82);
+    --client-border: rgba(128, 152, 182, 0.16);
+    --client-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-layout {
+    background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.09), transparent 26%),
+        radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 20%),
+        var(--client-bg);
+}
+
+.dashboard-main {
+    animation: clientFadeIn 0.65s ease;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    padding: 18px 22px;
+    margin: -8px -8px 24px;
+    backdrop-filter: blur(18px);
+    background: rgba(244, 248, 252, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    border-radius: 20px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.topbar-date {
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid var(--client-border);
+    color: #475569;
+}
+
+.stat-card,
+.panel {
+    position: relative;
+    overflow: hidden;
+    background: var(--client-surface);
+    border: 1px solid var(--client-border);
+    box-shadow: var(--client-shadow);
+    backdrop-filter: blur(14px);
+}
+
+.stat-card::before,
+.panel::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #0f5ea8 0%, #38bdf8 100%);
+}
+
+.stat-card,
+.panel,
+.appt-date-box {
+    border-radius: 20px;
+}
+
+.stat-card:hover,
+.panel:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 22px 42px rgba(15, 23, 42, 0.11);
+}
+
+.stat-card,
+.panel,
+.pro-item,
+.appt-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    animation: clientRiseUp 0.65s ease both;
+}
+
+.stat-card:nth-child(2) { animation-delay: 0.06s; }
+.stat-card:nth-child(3) { animation-delay: 0.12s; }
+.stat-card:nth-child(4) { animation-delay: 0.18s; }
+
+.btn-new-rdv,
+.btn-reserver,
+.btn-unfavorite,
+.client-notif-trigger {
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, border-color 0.22s ease, color 0.22s ease;
+}
+
+.btn-new-rdv {
+    border-radius: 12px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #042c53 0%, #0d5ea6 100%);
+    box-shadow: 0 12px 24px rgba(4, 44, 83, 0.18);
+}
+
+.btn-new-rdv:hover,
+.btn-reserver:hover,
+.btn-unfavorite:hover {
+    transform: translateY(-2px);
+}
+
+.client-notif-dropdown {
+    backdrop-filter: blur(18px);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes clientFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes clientRiseUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1100px) {
+    .stats-grid,
+    .two-col {
+        grid-template-columns: 1fr;
+    }
+}

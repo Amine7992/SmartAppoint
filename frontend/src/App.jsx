@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, memo } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -10,6 +10,8 @@ import PrivateRoute from './routes/PrivateRoute.jsx';
 // Auth Pages
 const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Register = lazy(() => import('./pages/auth/Register.jsx'));
+const LandingPage = lazy(() => import('./pages/public/LandingPage.jsx'));
+const ClientSpacePage = lazy(() => import('./pages/public/ClientSpacePage.jsx'));
 
 // Client Pages
 const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard.jsx'));
@@ -40,13 +42,15 @@ const AdminConfig = lazy(() => import('./pages/admin/AdminConfig.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile.jsx'));
 
 // Loading component
-const PageLoader = () => (
+const PageLoader = memo(function PageLoader() {
+  return (
   <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
     <div className="spinner-border text-primary" role="status">
       <span className="visually-hidden">Chargement...</span>
     </div>
   </div>
-);
+  );
+});
 
 function App() {
   return (
@@ -55,7 +59,8 @@ function App() {
         <ToastContainer position="top-right" autoClose={false} pauseOnHover />
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/espace-client" element={<ClientSpacePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
