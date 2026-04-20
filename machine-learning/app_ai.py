@@ -1,7 +1,12 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 from flask import Flask, jsonify, request
 import joblib
 import numpy as np
