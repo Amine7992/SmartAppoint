@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Search, User, Trash2, ShieldOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import UserAvatar from '../../components/common/UserAvatar';
 import api from '../../api/axios';
@@ -72,12 +73,14 @@ const AdminUsers = () => {
     }
   };
 
-  const filtered = users.filter(u => {
-    const matchRole  = role === 'Tous' || u.role === role;
-    const matchQuery = u.name?.toLowerCase().includes(query.toLowerCase()) ||
-                       u.email?.toLowerCase().includes(query.toLowerCase());
-    return matchRole && matchQuery;
-  });
+  const filtered = useMemo(() => {
+    return users.filter(u => {
+      const matchRole  = role === 'Tous' || u.role === role;
+      const matchQuery = u.name?.toLowerCase().includes(query.toLowerCase()) ||
+                         u.email?.toLowerCase().includes(query.toLowerCase());
+      return matchRole && matchQuery;
+    });
+  }, [users, role, query]);
 
   const roleLabel = { client: 'Client', professional: 'Pro', admin: 'Admin' };
   const roleCls   = { client: 'urole-client', professional: 'urole-pro', admin: 'urole-admin' };
@@ -134,42 +137,50 @@ const AdminUsers = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(u => (
-                  <tr key={u.id}>
-                    <td>
-                      <div className="au-user-cell">
-                        <UserAvatar user={u} fallback="US" className="au-avatar" />
-                        <span className="admin-table-name">{u.name}</span>
-                      </div>
-                    </td>
-                    <td className="admin-table-muted">{u.email}</td>
-                    <td><span className={`au-role-badge ${roleCls[u.role] || ''}`}>{roleLabel[u.role] || u.role}</span></td>
-                    <td>
-                      <span className={`admin-status-badge ${u.status === 'active' ? 'abadge-validated' : 'abadge-suspended'}`}>
-                        {u.status === 'active' ? 'Actif' : 'Suspendu'}
-                      </span>
-                    </td>
-                    <td className="admin-table-muted">
-                      {u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—'}
-                    </td>
-                    <td>
-                      <div className="admin-table-actions">
-                        {u.status === 'suspended' ? (
-                          <button className="admin-btn-reactivate" title="Annuler suspension" onClick={() => handleUnsuspend(u.id)}>
-                            Annuler suspension
+                <AnimatePresence>
+                  {filtered.map((u, i) => (
+                    <motion.tr
+                      key={u.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: i * 0.03 }}
+                    >
+                      <td>
+                        <div className="au-user-cell">
+                          <UserAvatar user={u} fallback="US" className="au-avatar" />
+                          <span className="admin-table-name">{u.name}</span>
+                        </div>
+                      </td>
+                      <td className="admin-table-muted">{u.email}</td>
+                      <td><span className={`au-role-badge ${roleCls[u.role] || ''}`}>{roleLabel[u.role] || u.role}</span></td>
+                      <td>
+                        <span className={`admin-status-badge ${u.status === 'active' ? 'abadge-validated' : 'abadge-suspended'}`}>
+                          {u.status === 'active' ? 'Actif' : 'Suspendu'}
+                        </span>
+                      </td>
+                      <td className="admin-table-muted">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—'}
+                      </td>
+                      <td>
+                        <div className="admin-table-actions">
+                          {u.status === 'suspended' ? (
+                            <button className="admin-btn-reactivate" title="Annuler suspension" onClick={() => handleUnsuspend(u.id)}>
+                              Annuler suspension
+                            </button>
+                          ) : (
+                            <button className="admin-btn-reject" title="Suspendre" onClick={() => handleSuspend(u.id)}>
+                              <ShieldOff size={13} />
+                            </button>
+                          )}
+                          <button className="admin-btn-reject" title="Supprimer" onClick={() => handleDelete(u.id)}>
+                            <Trash2 size={13} />
                           </button>
-                        ) : (
-                          <button className="admin-btn-reject" title="Suspendre" onClick={() => handleSuspend(u.id)}>
-                            <ShieldOff size={13} />
-                          </button>
-                        )}
-                        <button className="admin-btn-reject" title="Supprimer" onClick={() => handleDelete(u.id)}>
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
           )}

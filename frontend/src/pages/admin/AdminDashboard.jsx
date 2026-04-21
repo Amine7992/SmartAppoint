@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Users, Briefcase, Calendar, TrendingUp, X, User, Clock, AlertCircle, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import VerificationBadge from '../../components/common/VerificationBadge';
 import api from '../../api/axios';
@@ -171,16 +172,16 @@ const AdminDashboard = () => {
   /* ── Helpers stats dynamiques ── */
   const fmt = (val) => val != null ? val.toLocaleString('fr-FR') : '0';
 
-  const weeklyUsersLabel = () => {
+  const weeklyUsersLabel = useMemo(() => {
     if (!stats?.weekly_new_users && stats?.weekly_new_users !== 0) return null;
     return stats.weekly_new_users > 0
       ? `+${stats.weekly_new_users} cette semaine`
       : stats.weekly_new_users === 0
       ? 'Aucun nouveau cette semaine'
       : `${stats.weekly_new_users} cette semaine`;
-  };
+  }, [stats?.weekly_new_users]);
 
-  const monthlyApptLabel = () => {
+  const monthlyApptLabel = useMemo(() => {
     if (!stats?.monthly_growth_pct && stats?.monthly_growth_pct !== 0) return null;
     const pct = stats.monthly_growth_pct;
     return pct > 0
@@ -188,12 +189,12 @@ const AdminDashboard = () => {
       : pct === 0
       ? 'Stable vs mois passé'
       : `${pct}% vs mois passé`;
-  };
+  }, [stats?.monthly_growth_pct]);
 
-  const noshowLabel = () => {
+  const noshowLabel = useMemo(() => {
     if (!stats?.noshow_target) return 'Objectif : < 10%';
     return `Objectif : < ${stats.noshow_target}%`;
-  };
+  }, [stats?.noshow_target]);
 
   return (
     <div className="admin-layout">
@@ -224,9 +225,9 @@ const AdminDashboard = () => {
               <Users size={13} style={{ marginRight: 4 }} />Total utilisateurs
             </p>
             <p className="admin-stat-value">{fmt(stats?.total_users)}</p>
-            {weeklyUsersLabel() ? (
+            {weeklyUsersLabel ? (
               <p className={`admin-stat-sub ${stats?.weekly_new_users > 0 ? 'green' : 'muted'}`}>
-                {weeklyUsersLabel()}
+                {weeklyUsersLabel}
               </p>
             ) : (
               <p className="admin-stat-sub muted">—</p>
@@ -254,12 +255,12 @@ const AdminDashboard = () => {
               <Calendar size={13} style={{ marginRight: 4 }} />RDV ce mois
             </p>
             <p className="admin-stat-value">{fmt(stats?.monthly_appts)}</p>
-            {monthlyApptLabel() ? (
+            {monthlyApptLabel ? (
               <p className={`admin-stat-sub ${
                 stats?.monthly_growth_pct > 0 ? 'green'
                 : stats?.monthly_growth_pct < 0 ? 'red' : 'muted'
               }`}>
-                {monthlyApptLabel()}
+                {monthlyApptLabel}
               </p>
             ) : (
               <p className="admin-stat-sub muted">—</p>
@@ -276,7 +277,7 @@ const AdminDashboard = () => {
             <p className={`admin-stat-sub ${
               stats?.noshow_rate > 10 ? 'red' : 'muted'
             }`}>
-              {noshowLabel()}
+              {noshowLabel}
             </p>
           </div>
 
@@ -309,34 +310,42 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pendingPros.map(pro => (
-                    <tr key={pro.id}>
-                      <td>
-                        <div className="admin-pro-name-row">
-                          <span className="admin-table-name">{pro.name}</span>
-                          <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || '').toLowerCase()))} compact />
-                        </div>
-                      </td>
-                      <td className="admin-table-muted">{pro.specialty}</td>
-                      <td><StatusBadge status={pro.status} /></td>
-                      <td>
-                        <div className="admin-table-actions">
-                          {['pending', 'en attente'].includes(pro.status?.toLowerCase()) && (
-                            <>
-                              <button className="admin-btn-ok"     onClick={() => handleValidate(pro.id)}>OK</button>
+                  <AnimatePresence>
+                    {pendingPros.map((pro, i) => (
+                      <motion.tr
+                        key={pro.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2, delay: i * 0.05 }}
+                      >
+                        <td>
+                          <div className="admin-pro-name-row">
+                            <span className="admin-table-name">{pro.name}</span>
+                            <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || '').toLowerCase()))} compact />
+                          </div>
+                        </td>
+                        <td className="admin-table-muted">{pro.specialty}</td>
+                        <td><StatusBadge status={pro.status} /></td>
+                        <td>
+                          <div className="admin-table-actions">
+                            {['pending', 'en attente'].includes(pro.status?.toLowerCase()) && (
+                              <>
+                                <button className="admin-btn-ok"     onClick={() => handleValidate(pro.id)}>OK</button>
+                                <button className="admin-btn-reject" onClick={() => handleReject(pro.id)}><X size={13} /></button>
+                              </>
+                            )}
+                            {['validated', 'valide'].includes(pro.status?.toLowerCase()) && (
                               <button className="admin-btn-reject" onClick={() => handleReject(pro.id)}><X size={13} /></button>
-                            </>
-                          )}
-                          {['validated', 'valide'].includes(pro.status?.toLowerCase()) && (
-                            <button className="admin-btn-reject" onClick={() => handleReject(pro.id)}><X size={13} /></button>
-                          )}
-                          {['suspended', 'suspendu'].includes(pro.status?.toLowerCase()) && (
-                            <button className="admin-btn-reactivate" onClick={() => handleReactivate(pro.id)}>Réactiver</button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            )}
+                            {['suspended', 'suspendu'].includes(pro.status?.toLowerCase()) && (
+                              <button className="admin-btn-reactivate" onClick={() => handleReactivate(pro.id)}>Réactiver</button>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
                 </tbody>
               </table>
             )}
@@ -373,23 +382,32 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="admin-activity-list">
-              {activity.map((item, i) => (
-                <div key={i} className="admin-activity-item">
-                  <ActivityIcon type={item.type} />
-                  <div className="admin-activity-body">
-                    <p
-                      className="admin-activity-msg"
-                      dangerouslySetInnerHTML={{ __html: item.message }}
-                    />
-                    <p className="admin-activity-time">{timeAgo(item.created_at)}</p>
-                  </div>
-                  {item.tag && (
-                    <span className={`admin-activity-tag tag-${item.tag_type || 'info'}`}>
-                      {item.tag}
-                    </span>
-                  )}
-                </div>
-              ))}
+              <AnimatePresence>
+                {activity.map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2, delay: i * 0.05 }}
+                    className="admin-activity-item"
+                  >
+                    <ActivityIcon type={item.type} />
+                    <div className="admin-activity-body">
+                      <p
+                        className="admin-activity-msg"
+                        dangerouslySetInnerHTML={{ __html: item.message }}
+                      />
+                      <p className="admin-activity-time">{timeAgo(item.created_at)}</p>
+                    </div>
+                    {item.tag && (
+                      <span className={`admin-activity-tag tag-${item.tag_type || 'info'}`}>
+                        {item.tag}
+                      </span>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </div>

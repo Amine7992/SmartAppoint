@@ -155,6 +155,25 @@ body {
         transform: translateY(-2px);
     }
 
+    :where(
+        .public-btn,
+        .auth-btn,
+        .admin-btn-primary,
+        .admin-btn-ok,
+        .admin-btn-reject,
+        .admin-btn-reactivate,
+        .btn-new-rdv,
+        .pro-btn-primary,
+        .notif-mark-all,
+        .client-notif-mark-all,
+        .pro-notif-mark-all,
+        .client-notif-trigger,
+        .pro-notif-trigger,
+        button
+    ):active {
+        transform: translateY(0) scale(0.96);
+    }
+
     :where(.admin-main, .dashboard-main, .pro-main, .public-page main) > * {
         animation: contentSlideIn 0.8s var(--elegant-ease) both;
     }

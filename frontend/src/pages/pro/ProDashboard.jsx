@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Bell, Calendar, AlertCircle, Info, CheckCheck } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import useAuth from '../../hooks/useAuth';
@@ -117,9 +118,9 @@ const ProDashboard = () => {
   const currentMonth = MONTHS_FR[new Date().getMonth()];
   const currentYear = new Date().getFullYear();
 
-  const now = new Date();
-  const selectedDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
-  const selectedAppts = selectedDay === todayDate ? todayAppts : allAppts.filter(a => a.date === selectedDateStr);
+  const now = useMemo(() => new Date(), []);
+  const selectedDateStr = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`, [now, selectedDay]);
+  const selectedAppts = useMemo(() => selectedDay === todayDate ? todayAppts : allAppts.filter(a => a.date === selectedDateStr), [selectedDay, todayDate, todayAppts, allAppts, selectedDateStr]);
 
   const monthlyGrowthLabel = () => {
     const pct = stats?.monthly_growth_pct;
@@ -344,27 +345,36 @@ const ProDashboard = () => {
               <EmptyTimeline />
             ) : (
               <div className="pro-timeline">
-                {selectedAppts.map((appt) => {
-                  const hasRisk = appt.ai_score && appt.ai_score >= 0.4;
-                  return (
-                    <div key={appt.id} className="pro-timeline-row">
-                      <span className="pro-timeline-time">{appt.time}</span>
-                      <div className={`pro-timeline-card ${hasRisk ? 'risk' : ''}`}>
-                        <div className="pro-timeline-top">
-                          <span className="pro-timeline-name">{appt.client_name}</span>
-                          {hasRisk && (
-                            <span className={`pro-risk-badge ${getRiskClass(appt.ai_score)}`}>
-                              {getRiskLabel(appt.ai_score)}
-                            </span>
-                          )}
+                <AnimatePresence>
+                  {selectedAppts.map((appt, i) => {
+                    const hasRisk = appt.ai_score && appt.ai_score >= 0.4;
+                    return (
+                      <motion.div
+                        key={appt.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2, delay: i * 0.05 }}
+                        className="pro-timeline-row"
+                      >
+                        <span className="pro-timeline-time">{appt.time}</span>
+                        <div className={`pro-timeline-card ${hasRisk ? 'risk' : ''}`}>
+                          <div className="pro-timeline-top">
+                            <span className="pro-timeline-name">{appt.client_name}</span>
+                            {hasRisk && (
+                              <span className={`pro-risk-badge ${getRiskClass(appt.ai_score)}`}>
+                                {getRiskLabel(appt.ai_score)}
+                              </span>
+                            )}
+                          </div>
+                          <span className="pro-timeline-service">
+                            {appt.service} - {appt.duration || 30} min
+                          </span>
                         </div>
-                        <span className="pro-timeline-service">
-                          {appt.service} - {appt.duration || 30} min
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
             )}
           </div>

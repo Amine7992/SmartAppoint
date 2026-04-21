@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Plus, Calendar, User, AlertCircle, Info, CheckCheck, Heart } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
 import UserAvatar from '../../components/common/UserAvatar';
@@ -87,18 +88,9 @@ const ClientDashboard = () => {
 
         const appts = apptRes.data || [];
         const favList = favRes.data || [];
-        setAppointments(appts.slice(0, 3));
-        setStats({
-          upcoming: appts.filter((appt) => ['confirmed', 'pending', 'confirme', 'en attente'].includes(appt.status?.toLowerCase())).length,
-          // Option 1 – most likely (recommended)
-          past: appts.filter((appt) => 
-            ['past', 'completed', 'terminé', 'done', 'finished'].includes(appt.status?.toLowerCase())
-          ).length,
-          cancelled: appts.filter((appt) => ['cancelled', 'annule'].includes(appt.status?.toLowerCase())).length,
-          favourites: favList.length,
-        });
-        setPros((prosRes.data || []).slice(0, 3));
-        setFavorites(favList.slice(0, 3));
+        setAppointments(appts);
+        setPros(prosRes.data || []);
+        setFavorites(favList);
         setNotifications(notifRes.data || []);
       } catch (err) {
         console.error(err);
@@ -125,7 +117,6 @@ const ClientDashboard = () => {
     try {
       await api.delete(`/favorites/${proId}`);
       setFavorites(prev => prev.filter(p => p.id !== proId));
-      setStats(prev => ({ ...prev, favourites: Math.max(0, prev.favourites - 1) }));
     } catch (err) {
       console.error(err);
     }
@@ -159,6 +150,19 @@ const ClientDashboard = () => {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
   const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
+
+  const computedStats = useMemo(() => {
+    return {
+      upcoming: appointments.filter((appt) => ['confirmed', 'pending', 'confirme', 'en attente'].includes(appt.status?.toLowerCase())).length,
+      past: appointments.filter((appt) => ['past', 'completed', 'terminé', 'done', 'finished'].includes(appt.status?.toLowerCase())).length,
+      cancelled: appointments.filter((appt) => ['cancelled', 'annule'].includes(appt.status?.toLowerCase())).length,
+      favourites: favorites.length,
+    };
+  }, [appointments, favorites]);
+
+  const visibleAppointments = useMemo(() => appointments.slice(0, 3), [appointments]);
+  const visiblePros = useMemo(() => pros.slice(0, 3), [pros]);
+  const visibleFavorites = useMemo(() => favorites.slice(0, 3), [favorites]);
 
   return (
     <div className="dashboard-layout">
@@ -239,22 +243,22 @@ const ClientDashboard = () => {
         <section className="stats-grid">
           <div className="stat-card">
             <p className="stat-label">RDV a venir</p>
-            <p className="stat-value">{stats.upcoming}</p>
+            <p className="stat-value">{computedStats.upcoming}</p>
             <p className="stat-sub blue">Ce mois-ci</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">RDV passes</p>
-            <p className="stat-value">{stats.past}</p>
+            <p className="stat-value">{computedStats.past}</p>
             <p className="stat-sub muted">Total</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">Annules</p>
-            <p className="stat-value">{stats.cancelled}</p>
+            <p className="stat-value">{computedStats.cancelled}</p>
             <p className="stat-sub orange">Ce mois</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">Pros favoris</p>
-            <p className="stat-value">{stats.favourites}</p>
+            <p className="stat-value">{computedStats.favourites}</p>
             <p className="stat-sub muted">Enregistres</p>
           </div>
         </section>
@@ -269,28 +273,37 @@ const ClientDashboard = () => {
             </div>
             {loading ? (
               <p className="loading-text">Chargement...</p>
-            ) : appointments.length === 0 ? (
+            ) : visibleAppointments.length === 0 ? (
               <EmptyState icon={Calendar} message="Aucun rendez-vous a venir. Reservez votre premier RDV !" />
             ) : (
               <ul className="appt-list">
-                {appointments.map((appt) => {
-                  const { day, month } = formatDate(appt.date);
-                  return (
-                    <li key={appt.id} className="appt-item">
-                      <div className="appt-date-box">
-                        <span className="appt-day">{day}</span>
-                        <span className="appt-month">{month}</span>
-                      </div>
-                      <div className="appt-info">
-                        <p className="appt-name">{appt.professional_name}</p>
-                        <p className="appt-detail">
-                          {appt.time} - {appt.service} · {appt.duration} min
-                        </p>
-                      </div>
-                      <StatusBadge status={appt.status} />
-                    </li>
-                  );
-                })}
+                <AnimatePresence>
+                  {visibleAppointments.map((appt, i) => {
+                    const { day, month } = formatDate(appt.date);
+                    return (
+                      <motion.li
+                        key={appt.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2, delay: i * 0.05 }}
+                        className="appt-item"
+                      >
+                        <div className="appt-date-box">
+                          <span className="appt-day">{day}</span>
+                          <span className="appt-month">{month}</span>
+                        </div>
+                        <div className="appt-info">
+                          <p className="appt-name">{appt.professional_name}</p>
+                          <p className="appt-detail">
+                            {appt.time} - {appt.service} · {appt.duration} min
+                          </p>
+                        </div>
+                        <StatusBadge status={appt.status} />
+                      </motion.li>
+                    );
+                  })}
+                </AnimatePresence>
               </ul>
             )}
           </div>
@@ -304,28 +317,37 @@ const ClientDashboard = () => {
             </div>
             {loading ? (
               <p className="loading-text">Chargement...</p>
-            ) : pros.length === 0 ? (
+            ) : visiblePros.length === 0 ? (
               <EmptyState icon={User} message="Aucun professionnel disponible pour l'instant." />
             ) : (
               <ul className="pros-list">
-                {pros.map((pro) => (
-                  <li key={pro.id} className="pro-item">
-                    <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
-                    <div className="pro-info">
-                      <div className="pro-name-row">
-                        <p className="pro-name">{[pro.prenom, pro.nom].filter(Boolean).join(' ').trim() || pro.name}</p>
-                        <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || pro.validation || '').toLowerCase()))} compact className="dashboard-verified-badge" />
-                      </div>
-                      <p className="pro-meta">{pro.specialty} · {pro.city}</p>
-                    </div>
-                    <button
-                      className="btn-reserver"
-                      onClick={() => navigate(`/client/book?pro=${pro.id}`)}
+                <AnimatePresence>
+                  {visiblePros.map((pro, i) => (
+                    <motion.li
+                      key={pro.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: i * 0.05 }}
+                      className="pro-item"
                     >
-                      Reserver
-                    </button>
-                  </li>
-                ))}
+                      <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
+                      <div className="pro-info">
+                        <div className="pro-name-row">
+                          <p className="pro-name">{[pro.prenom, pro.nom].filter(Boolean).join(' ').trim() || pro.name}</p>
+                          <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || pro.validation || '').toLowerCase()))} compact className="dashboard-verified-badge" />
+                        </div>
+                        <p className="pro-meta">{pro.specialty} · {pro.city}</p>
+                      </div>
+                      <button
+                        className="btn-reserver"
+                        onClick={() => navigate(`/client/book?pro=${pro.id}`)}
+                      >
+                        Reserver
+                      </button>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
               </ul>
             )}
           </div>
@@ -345,37 +367,46 @@ const ClientDashboard = () => {
             </div>
             {loading ? (
               <p className="loading-text">Chargement...</p>
-            ) : favorites.length === 0 ? (
+            ) : visibleFavorites.length === 0 ? (
               <EmptyState icon={Heart} message="Vous n'avez pas encore de professionnels favoris. Ajoutez-en depuis vos rendez-vous." />
             ) : (
               <ul className="pros-list">
-                {favorites.map((pro) => (
-                  <li key={pro.id} className="pro-item">
-                    <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
-                    <div className="pro-info">
-                      <div className="pro-name-row">
-                        <p className="pro-name">{[pro.prenom, pro.nom].filter(Boolean).join(' ').trim() || pro.name}</p>
-                        <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || pro.validation || '').toLowerCase()))} compact className="dashboard-verified-badge" />
+                <AnimatePresence>
+                  {visibleFavorites.map((pro, i) => (
+                    <motion.li
+                      key={pro.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: i * 0.05 }}
+                      className="pro-item"
+                    >
+                      <UserAvatar user={pro} fallback="PR" className="pro-avatar" style={{ background: '#1a5276' }} />
+                      <div className="pro-info">
+                        <div className="pro-name-row">
+                          <p className="pro-name">{[pro.prenom, pro.nom].filter(Boolean).join(' ').trim() || pro.name}</p>
+                          <VerificationBadge verified={Boolean(pro.verified || ['validated', 'valide'].includes(String(pro.status || pro.validation || '').toLowerCase()))} compact className="dashboard-verified-badge" />
+                        </div>
+                        <p className="pro-meta">{pro.specialty} · {pro.city}</p>
                       </div>
-                      <p className="pro-meta">{pro.specialty} · {pro.city}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        className="btn-reserver"
-                        onClick={() => navigate(`/client/book?pro=${pro.id}`)}
-                      >
-                        Reserver
-                      </button>
-                      <button
-                        className="btn-unfavorite"
-                        onClick={() => handleRemoveFavorite(pro.id)}
-                        title="Retirer des favoris"
-                      >
-                        <Heart size={14} fill="#ef4444" color="#ef4444" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="btn-reserver"
+                          onClick={() => navigate(`/client/book?pro=${pro.id}`)}
+                        >
+                          Reserver
+                        </button>
+                        <button
+                          className="btn-unfavorite"
+                          onClick={() => handleRemoveFavorite(pro.id)}
+                          title="Retirer des favoris"
+                        >
+                          <Heart size={14} fill="#ef4444" color="#ef4444" />
+                        </button>
+                      </div>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
               </ul>
             )}
           </div>
