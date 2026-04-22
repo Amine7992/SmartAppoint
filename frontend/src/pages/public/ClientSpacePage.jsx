@@ -74,7 +74,7 @@ function ClientSpacePage() {
           />
         </Link>
         <nav className="public-nav">
-          <Link to="/">Accueil</Link>
+          <Link to="/">Espace professionnel</Link>
           <Link to="/login">Connexion</Link>
           <Link to="/register" className="public-nav-cta">Commencer</Link>
         </nav>
