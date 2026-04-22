@@ -310,7 +310,7 @@ const ClientDashboard = () => {
 
           <div className="panel">
             <div className="panel-header">
-              <h2 className="panel-title">Professionnels recommandes</h2>
+              <h2 className="panel-title">Professionnels recommandés</h2>
               <button className="link-btn" onClick={() => navigate('/client/book')}>
                 Explorer
               </button>
