@@ -8,12 +8,12 @@ const cancelExpiredAppointments = async () => {
   try {
     const now = new Date().toISOString();
 
-    // On n'annule QUE les 'confirmed' et 'past' — jamais les 'pending'
-    // car les 'pending' doivent attendre la validation du professionnel
+    // On annule les 'pending' qui n'ont pas été confirmés avant l'heure prévue.
+    // On ne touche pas aux 'confirmed' car ils doivent être complétés manuellement par le professionnel.
     const { data: expiredAppointments, error: fetchError } = await supabase
       .from('Appointment')
       .select('id, client_id, professional_id, date_heure, status')
-      .in('status', ['confirmed', 'past'])
+      .in('status', ['pending', 'reschedule_requested'])
       .lt('date_heure', now);
 
     if (fetchError) {

@@ -156,6 +156,10 @@ router.post('/appointments', async (req, res) => {
       return res.status(400).json({ error: 'Date ou heure invalide' });
     }
 
+    if (new Date(dateHeure) < new Date()) {
+      return res.status(400).json({ error: "On ne peut pas prendre un rendez-vous dans le passé !" });
+    }
+
     const schedule = getProfessionalSchedule(professional_id);
     if (!isSlotAllowedBySchedule(schedule, date, time)) {
       return res.status(400).json({ error: 'Ce creneau est en dehors des horaires du professionnel' });
