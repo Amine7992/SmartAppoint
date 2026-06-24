@@ -12,6 +12,10 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10"
+  },
   "dependencies": {
     "@faker-js/faker": "^10.4.0",
     "@supabase/supabase-js": "^2.101.1",

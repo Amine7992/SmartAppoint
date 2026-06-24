@@ -10,7 +10,19 @@ This repository is an isolated monorepo. Deploy it on Railway as three separate 
 | `smartappoint-backend` | `/backend` | Express.js REST API |
 | `smartappoint-frontend` | `/frontend` | React production build |
 
-Each directory contains a `railway.json` file with its build command, start command, restart policy, and healthcheck.
+Each directory contains a `railway.json` file with the Railway builder, start command, restart policy, and healthcheck. Nixpacks handles dependency installation automatically.
+
+## Railway Commands
+
+Use the checked-in `railway.json` files when possible. If you configure commands manually in Railway Web, use:
+
+| Service | Build command | Start command |
+| --- | --- | --- |
+| Backend | leave empty | `npm start` |
+| Frontend | `npm run build` | `npm run railway:start` |
+| AI | leave empty | `gunicorn app_ai:app --bind 0.0.0.0:$PORT` |
+
+Do not set backend build command to `npm ci`; Nixpacks already runs it during the install phase.
 
 ## Recommended Order
 
