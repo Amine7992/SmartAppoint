@@ -28,9 +28,11 @@ const {
 const app = express();
 
 // CORS Configuration
+const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
+
 const allowedOrigins = String(process.env.CORS_ORIGIN || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 
 const corsOptions = {
@@ -40,10 +42,14 @@ const corsOptions = {
       typeof origin === 'string' &&
       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
 
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin) || isLocalDevOrigin) {
+    const normalizedOrigin = normalizeOrigin(origin);
+
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(normalizedOrigin) || isLocalDevOrigin) {
       return callback(null, true);
     }
-    return callback(new Error('Origine non autorisée par CORS'));
+    const error = new Error('Origine non autorisee par CORS');
+    error.statusCode = 403;
+    return callback(error);
   },
   credentials: true,
 };
@@ -115,6 +121,9 @@ app.use((err, req, res, next) => {
       error: 'Image trop lourde pour le serveur. Choisissez un fichier plus petit.',
     });
   }
+  if (err?.statusCode === 403) {
+    return res.status(403).json({ error: err.message });
+  }
   if (err) {
     console.error('Unhandled server error', err);
     return res.status(500).json({ error: 'Erreur serveur interne' });
@@ -146,3 +155,4 @@ app.listen(PORT, async () => {
   console.log('Running initial check for expired appointments...');
   await cancelExpiredAppointments();
 });
+
