@@ -56,6 +56,19 @@ const loadPngImage = (filePath) => {
   };
 };
 
+const resolveLogoPath = () => {
+  const candidates = [
+    path.join(__dirname, '..', 'assets', 'logo2.png'),
+    path.join(__dirname, '..', '..', 'frontend', 'public', 'logo2.png'),
+  ];
+
+  const logoPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!logoPath) {
+    throw new Error(`SmartAppoint report logo not found. Checked: ${candidates.join(', ')}`);
+  }
+  return logoPath;
+};
+
 const hexToRgb = (hex) => {
   const value = String(hex || '').replace('#', '').trim();
   const normalized = value.length === 3
@@ -100,7 +113,7 @@ const buildLine = (text, x, y, size = 11, font = '/F2', color = '#1F2937') => {
   ].join('\n');
 };
 
-const logoImage = loadPngImage(path.join(__dirname, '..', '..', 'frontend', 'public', 'logo2.png'));
+const logoImage = loadPngImage(resolveLogoPath());
 
 const buildPdfBuffer = (report) => {
   const pageWidth = 595;

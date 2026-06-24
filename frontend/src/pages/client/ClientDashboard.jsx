@@ -65,7 +65,6 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
   const notifMenuRef = useRef(null);
 
-  const [stats, setStats] = useState({ upcoming: 0, past: 0, cancelled: 0, favourites: 0 });
   const [appointments, setAppointments] = useState([]);
   const [pros, setPros] = useState([]);
   const [favorites, setFavorites] = useState([]);

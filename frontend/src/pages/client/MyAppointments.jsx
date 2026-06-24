@@ -151,7 +151,7 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
 
         <div className="edit-slots-grid">
           {availableSlots.map((slot) => (
-            <button key={slot} disabled={takenSlots.includes(slot) && slot !== appointment?.time} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
+            <button key={slot} disabled={(takenSlots.includes(slot) && slot !== appointment?.time) || !isSlotAvailable(selectedDay, slot)} className={`edit-slot-btn ${selectedTime === slot ? 'active' : ''}`} onClick={() => setSelectedTime(slot)}>
               {slot}
             </button>
           ))}
@@ -161,6 +161,7 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
           <button className="ma-btn-secondary" onClick={onClose}>Annuler</button>
           <button 
             className="ma-btn-primary" 
+            disabled={saving}
             onClick={() => {
               if (!selectedDay || !selectedTime) {
                 alert('Veuillez sélectionner une date et une heure.');
@@ -172,12 +173,13 @@ const EditAppointmentModal = ({ appointment, onClose, onSubmit }) => {
                 alert('Veuillez sélectionner une date et une heure dans le futur.');
                 return;
               }
-              onSubmit(selectedDay, selectedTime);
+              handleSubmit();
             }}
           >
-            Enregistrer
+            {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>
+        {error && <p className="modal-error">{error}</p>}
       </div>
     </div>
   );

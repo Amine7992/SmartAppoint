@@ -67,6 +67,9 @@ const AdminStats = () => {
             <h1 className="admin-page-title">Tableau de Bord Financier</h1>
             <p className="admin-subtitle">Surveillance des revenus et de la taxation fiscale</p>
           </div>
+          <button className="admin-action-btn" type="button" onClick={handleSendNotifications}>
+            Notifier les professionnels
+          </button>
         </header>
 
         <div className="admin-stats-container">
