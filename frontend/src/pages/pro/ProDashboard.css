@@ -689,7 +689,287 @@
     margin: 0;
 }
 
+.pro-mobile-home {
+    display: none;
+}
+
 @media (max-width: 900px) {
+    .pro-layout {
+        background: #eaf5f0;
+    }
+
+    .pro-main {
+        width: 100%;
+        padding: 20px 16px 108px !important;
+        background: linear-gradient(180deg, #eff9f5 0%, #f7fbf9 100%);
+    }
+
+    .pro-mobile-home {
+        display: block;
+        max-width: 430px;
+        margin: 0 auto;
+    }
+
+    .pro-main > .pro-topbar,
+    .pro-main > .pro-stats-grid,
+    .pro-main > .pro-two-col,
+    .pro-main > .pro-chart-panel {
+        display: none;
+    }
+
+    .pro-mobile-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .pro-mobile-kicker {
+        margin: 0 0 2px;
+        color: #60746e;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .pro-mobile-header h1 {
+        margin: 0;
+        color: #10221e;
+        font-size: 22px;
+        font-weight: 850;
+        line-height: 1.12;
+    }
+
+    .pro-mobile-bell {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 50%;
+        background: #fff;
+        color: #10221e;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .pro-mobile-bell span {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        border: 2px solid #fff;
+        font-size: 10px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pro-mobile-date-pill {
+        width: fit-content;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #fff;
+        color: #60746e;
+        border: 1px solid #dce9e4;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 22px;
+    }
+
+    .pro-mobile-primary {
+        width: 100%;
+        min-height: 56px;
+        border: 0;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #075344 0%, #12a06f 100%);
+        color: #fff;
+        font-weight: 850;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 16px 30px rgba(8, 80, 65, 0.18);
+        margin-bottom: 26px;
+    }
+
+    .pro-mobile-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 12px;
+    }
+
+    .pro-mobile-section-head h2 {
+        margin: 0;
+        color: #1b302c;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+    .pro-mobile-section-head button {
+        border: 0;
+        background: transparent;
+        color: #0e9a72;
+        text-decoration: underline;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .pro-mobile-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .pro-mobile-stat-card {
+        min-height: 134px;
+        padding: 16px 14px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid #dce9e4;
+        border-top: 5px solid #11b889;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .pro-mobile-stat-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: #e4f7ef;
+        color: #0b6a56;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
+    .pro-mobile-stat-card strong {
+        display: block;
+        color: #1f2b28;
+        font-size: 26px;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .pro-mobile-stat-card p,
+    .pro-mobile-stat-card small {
+        display: block;
+        margin: 0;
+        color: #6b7d78;
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    .pro-mobile-stat-card small {
+        color: #0d8a66;
+        margin-top: 2px;
+    }
+
+    .pro-mobile-today-card {
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid #dce9e4;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .pro-mobile-empty,
+    .pro-mobile-loading {
+        min-height: 218px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 28px 24px;
+    }
+
+    .pro-mobile-empty span {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #dff6ed;
+        color: #0b6a56;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+    .pro-mobile-empty h3 {
+        margin: 0 0 6px;
+        color: #1f2b28;
+        font-size: 15px;
+        font-weight: 850;
+    }
+
+    .pro-mobile-empty p,
+    .pro-mobile-loading {
+        margin: 0;
+        color: #74847f;
+        font-size: 12.5px;
+        line-height: 1.4;
+    }
+
+    .pro-mobile-empty button {
+        margin-top: 18px;
+        padding: 9px 18px;
+        border-radius: 999px;
+        border: 1px solid #12b886;
+        background: #fff;
+        color: #0b6a56;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .pro-mobile-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .pro-mobile-appointment {
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        gap: 3px 12px;
+        width: 100%;
+        padding: 13px;
+        border: 1px solid #e1eee9;
+        border-radius: 12px;
+        background: #f7fcfa;
+        text-align: left;
+    }
+
+    .pro-mobile-appointment span {
+        grid-row: span 2;
+        color: #0b6a56;
+        font-weight: 850;
+        font-size: 13px;
+    }
+
+    .pro-mobile-appointment strong {
+        color: #1f2b28;
+        font-size: 13px;
+    }
+
+    .pro-mobile-appointment small {
+        color: #74847f;
+        font-size: 12px;
+    }
+
     .pro-topbar {
         flex-direction: column;
         align-items: flex-start;

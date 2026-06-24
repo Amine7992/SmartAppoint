@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, Search, User, Bell, LogOut, HelpCircle, X, Mail, Phone } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
+import MobileBottomNav from './MobileBottomNav';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -89,6 +90,7 @@ const Sidebar = () => {
           </button>
         </div>
       </aside>
+      <MobileBottomNav role="client" />
 
       {/* ===== PANNEAU SUPPORT ===== */}
       {supportOpen && (

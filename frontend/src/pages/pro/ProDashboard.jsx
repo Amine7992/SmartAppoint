@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Bell, Calendar, AlertCircle, Info, CheckCheck } from 'lucide-react';
+import { Clock, Bell, Calendar, AlertCircle, Info, CheckCheck, CalendarCheck, Star } from 'lucide-react';
 import ProSidebar from '../../components/pro/ProSidebar';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
@@ -39,7 +39,7 @@ const timeAgo = (dateStr) => {
 };
 
 const ProDashboard = () => {
-  useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const notifMenuRef = useRef(null);
 
@@ -184,6 +184,95 @@ const ProDashboard = () => {
     <div className="pro-layout">
       <ProSidebar />
       <main className="pro-main">
+        <section className="pro-mobile-home" aria-label="Accueil professionnel mobile">
+          <div className="pro-mobile-header">
+            <div>
+              <p className="pro-mobile-kicker">Espace pro</p>
+              <h1>Bonjour, {user?.name || 'Professionnel'}</h1>
+            </div>
+            <button
+              type="button"
+              className={`pro-mobile-bell ${unreadNotifications > 0 ? 'has-alert' : ''}`}
+              onClick={() => navigate('/pro/notifications')}
+              aria-label="Notifications"
+            >
+              <Bell size={22} />
+              {unreadNotifications > 0 ? <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span> : null}
+            </button>
+          </div>
+
+          <div className="pro-mobile-date-pill">
+            <Calendar size={14} />
+            <span>{todayCapitalized}</span>
+          </div>
+
+          <button type="button" className="pro-mobile-primary" onClick={() => navigate('/pro/planning')}>
+            <Calendar size={16} />
+            <span>Gerer les horaires</span>
+          </button>
+
+          <div className="pro-mobile-section-head">
+            <h2>En un coup d'oeil</h2>
+          </div>
+
+          <div className="pro-mobile-stats">
+            <article className="pro-mobile-stat-card">
+              <span className="pro-mobile-stat-icon"><CalendarCheck size={16} /></span>
+              <strong>{stats.today ?? 0}</strong>
+              <p>RDV aujourd'hui</p>
+              <small>En temps reel</small>
+            </article>
+            <article className="pro-mobile-stat-card">
+              <span className="pro-mobile-stat-icon"><Calendar size={16} /></span>
+              <strong>{stats?.month ?? 0}</strong>
+              <p>Ce mois-ci</p>
+              <small>{monthlyGrowthLabel() || 'Activite mensuelle'}</small>
+            </article>
+            <article className="pro-mobile-stat-card">
+              <span className="pro-mobile-stat-icon"><AlertCircle size={16} /></span>
+              <strong>{stats.absence_rate ? `${stats.absence_rate}%` : '0%'}</strong>
+              <p>Taux d'absence</p>
+              <small>Analyse IA</small>
+            </article>
+            <article className="pro-mobile-stat-card">
+              <span className="pro-mobile-stat-icon"><Star size={16} /></span>
+              <strong>{stats?.rating != null ? stats.rating : '-'}</strong>
+              <p>Note moyenne</p>
+              <small>sur 5</small>
+            </article>
+          </div>
+
+          <div className="pro-mobile-section-head">
+            <h2>Aujourd'hui</h2>
+            <button type="button" onClick={() => navigate('/pro/planning')}>
+              {loading ? '...' : `${selectedAppts.length} RDV`}
+            </button>
+          </div>
+
+          <section className="pro-mobile-today-card">
+            {loading ? (
+              <p className="pro-mobile-loading">Chargement...</p>
+            ) : selectedAppts.length === 0 ? (
+              <div className="pro-mobile-empty">
+                <span><Clock size={22} /></span>
+                <h3>Aucun rendez-vous ce jour</h3>
+                <p>Votre journee est libre. Profitez-en pour ajuster vos disponibilites.</p>
+                <button type="button" onClick={() => navigate('/pro/planning')}>Voir la semaine</button>
+              </div>
+            ) : (
+              <div className="pro-mobile-list">
+                {selectedAppts.slice(0, 4).map((appt) => (
+                  <button type="button" key={appt.id} className="pro-mobile-appointment" onClick={() => navigate('/pro/planning')}>
+                    <span>{appt.time}</span>
+                    <strong>{appt.client_name}</strong>
+                    <small>{appt.service}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </section>
+
         <header className="pro-topbar">
           <h1 className="pro-page-title">Tableau de bord</h1>
           <div className="pro-topbar-right">

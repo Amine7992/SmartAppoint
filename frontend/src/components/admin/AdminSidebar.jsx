@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Briefcase, Calendar, BarChart2, Settings, LogOut, UserCircle2 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
+import MobileBottomNav from '../common/MobileBottomNav';
 import '../common/Sidebar.css';
 import './AdminSidebar.css';
 
@@ -18,6 +19,7 @@ const AdminSidebar = () => {
   const avatarSrc = getAvatarSrc(user);
 
   return (
+    <>
     <aside className="admin-sidebar">
       {/* SECTION LOGO MISE À JOUR */}
       <div className="sidebar-brand">
@@ -80,6 +82,8 @@ const AdminSidebar = () => {
         </button>
       </div>
     </aside>
+    <MobileBottomNav role="admin" />
+    </>
   );
 };
 

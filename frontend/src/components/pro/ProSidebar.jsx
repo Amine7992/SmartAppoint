@@ -3,6 +3,7 @@ import { LayoutDashboard, Calendar, Users, Briefcase, BarChart2, AlertTriangle, 
 import useAuth from '../../hooks/useAuth';
 import { getAvatarSrc, getUserInitials } from '../../utils/avatar';
 import VerificationBadge from '../common/VerificationBadge';
+import MobileBottomNav from '../common/MobileBottomNav';
 import '../common/Sidebar.css';
 import './ProSidebar.css';
 
@@ -19,6 +20,7 @@ const ProSidebar = () => {
   const avatarSrc = getAvatarSrc(user);
 
   return (
+    <>
     <aside className="pro-sidebar">
       <div className="sidebar-brand">
         <div className="sidebar-brand-mark">
@@ -65,6 +67,8 @@ const ProSidebar = () => {
         </button>
       </div>
     </aside>
+    <MobileBottomNav role="professional" />
+    </>
   );
 };
 
