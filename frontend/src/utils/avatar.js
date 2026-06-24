@@ -12,7 +12,16 @@ export const getUserInitials = (user, fallback = 'US') => {
   return nameInitials || fallback;
 };
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const normalizeApiUrl = (value) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return 'http://localhost:5000/api';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(trimmed)) return `http://${trimmed}`;
+  if (/^[\w.-]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(trimmed)) return `https://${trimmed}`;
+  return `http://localhost:5000${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+};
+
+const API_BASE_URL = normalizeApiUrl(process.env.REACT_APP_API_URL);
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
 export const getAvatarSrc = (user) => {

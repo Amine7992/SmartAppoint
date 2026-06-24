@@ -6,6 +6,12 @@ const defaultApiUrl = 'http://localhost:5000/api';
 const normalizeApiUrl = (value) => {
     if (!value) return defaultApiUrl;
     if (/^https?:\/\//i.test(value)) return value;
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(value)) {
+        return `http://${value}`;
+    }
+    if (/^[\w.-]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(value)) {
+        return `https://${value}`;
+    }
 
     const normalizedPath = value.startsWith('/') ? value : `/${value}`;
     return `http://localhost:5000${normalizedPath}`;
