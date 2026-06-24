@@ -347,3 +347,232 @@ body {
         transform: translateY(0) scale(1);
     }
 }
+
+/* ===== RESPONSIVE SAFETY LAYER ===== */
+
+html,
+body,
+#root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+    max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+    max-width: 100%;
+}
+
+:where(.dashboard-main, .pro-main, .admin-main) {
+    min-width: 0;
+}
+
+:where(.admin-table, .risk-table, table) {
+    width: 100%;
+}
+
+:where(.admin-panel, .pro-panel, .panel, .profile-card, .ma-card, .notif-card, .appointment-card) {
+    min-width: 0;
+}
+
+:where(.admin-panel, .risk-table, .admin-table, .ma-table, .plan-grid-wrapper) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1180px) {
+    :where(.stats-grid, .admin-stats-grid, .pro-stats-grid, .risk-summary-grid, .svc-grid, .pro-clients-layout, .profile-grid, .financial-grid) {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+    }
+
+    :where(.two-col, .admin-content-grid, .pro-dashboard-grid, .pro-grid-main, .stats-main-grid) {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 900px) {
+    :where(.dashboard-layout, .pro-layout, .admin-layout) {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 100vh;
+    }
+
+    :where(.sidebar, .pro-sidebar, .admin-sidebar) {
+        position: sticky !important;
+        top: 0;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        width: 100% !important;
+        min-height: 0 !important;
+        max-height: none;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+        z-index: 50;
+    }
+
+    :where(.sidebar-brand, .pro-sidebar-brand, .admin-sidebar-brand) {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 0 8px 0 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        flex: 0 0 auto;
+    }
+
+    :where(.sidebar-brand-mark, .pro-sidebar-brand-mark, .admin-sidebar-brand-mark) {
+        width: 42px !important;
+        height: 42px !important;
+        border-radius: 12px !important;
+    }
+
+    :where(.brand-sub, .pro-brand-sub, .admin-brand-sub, .sidebar-section-label, .pro-sidebar-section-label, .admin-sidebar-section-label, .sidebar-footer, .pro-sidebar-footer, .admin-sidebar-footer) {
+        display: none !important;
+    }
+
+    :where(.sidebar-nav, .pro-sidebar-nav, .admin-sidebar-nav) {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 6px !important;
+        padding: 0 !important;
+        flex: 0 0 auto;
+    }
+
+    :where(.nav-item, .pro-nav-item, .admin-nav-item) {
+        flex: 0 0 auto;
+        min-height: 40px;
+        padding: 8px 10px !important;
+        border-radius: 999px !important;
+        white-space: nowrap;
+        font-size: 12.5px !important;
+    }
+
+    :where(.dashboard-main, .pro-main, .admin-main) {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        padding: 18px clamp(12px, 4vw, 24px) 28px !important;
+    }
+
+    :where(.topbar, .pro-topbar, .admin-topbar) {
+        position: static !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        margin: 0 0 18px !important;
+        padding: 14px !important;
+    }
+
+    :where(.topbar-right, .pro-topbar-right, .admin-topbar-actions, .au-toolbar) {
+        width: 100%;
+        justify-content: flex-start !important;
+        flex-wrap: wrap;
+        gap: 10px !important;
+    }
+
+    :where(.page-title, .pro-page-title, .admin-page-title) {
+        font-size: clamp(22px, 7vw, 30px) !important;
+        line-height: 1.15 !important;
+        overflow-wrap: anywhere;
+    }
+
+    :where(.stats-grid, .admin-stats-grid, .pro-stats-grid, .risk-summary-grid, .svc-grid, .profile-grid, .financial-grid, .two-col, .services-list, .appointments-grid) {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+    }
+
+    :where(.stat-card, .admin-kpi-card, .pro-stat-card, .risk-summary-card, .panel, .pro-panel, .admin-panel, .svc-card, .profile-card, .ma-card, .notif-card) {
+        padding: clamp(14px, 4vw, 20px) !important;
+        border-radius: 16px !important;
+    }
+
+    :where(.client-notif-dropdown, .pro-notif-dropdown) {
+        position: fixed !important;
+        left: 12px !important;
+        right: 12px !important;
+        top: 76px !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
+    :where(.modal-card, .ma-modal-content, .modal-content, .support-panel) {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        border-radius: 16px !important;
+        padding: clamp(16px, 5vw, 24px) !important;
+    }
+}
+
+@media (max-width: 560px) {
+    :where(.sidebar, .pro-sidebar, .admin-sidebar) {
+        align-items: stretch;
+    }
+
+    :where(.sidebar-brand-title, .pro-sidebar-brand-title, .admin-sidebar-brand-title, .pro-brand-name) {
+        font-size: 14px !important;
+    }
+
+    :where(.nav-item span, .pro-nav-item span, .admin-nav-item span) {
+        display: none;
+    }
+
+    :where(.nav-item, .pro-nav-item, .admin-nav-item) {
+        width: 40px !important;
+        height: 40px !important;
+        justify-content: center;
+        padding: 0 !important;
+    }
+
+    :where(.dashboard-main, .pro-main, .admin-main) {
+        padding: 14px 10px 24px !important;
+    }
+
+    :where(.auth-bg) {
+        padding: 14px !important;
+    }
+
+    :where(.auth-card, .auth-form-section, .auth-form-card) {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 18px !important;
+        border-radius: 18px !important;
+    }
+
+    :where(.auth-page-title, .auth-title) {
+        font-size: clamp(24px, 8vw, 34px) !important;
+        line-height: 1.12 !important;
+    }
+
+    :where(.auth-two-col, .edit-days-grid, .edit-slots-grid, .available-slots, .plan-settings-grid) {
+        grid-template-columns: 1fr !important;
+    }
+
+    :where(.btn-new-rdv, .auth-btn, .pro-btn-primary, .admin-btn-primary, .svc-submit-btn, .ma-btn-primary, .ma-btn-secondary) {
+        width: 100%;
+        justify-content: center;
+    }
+
+    :where(.appt-item, .pro-item, .client-notif-item, .notif-card) {
+        align-items: flex-start !important;
+    }
+
+    :where(.admin-table, .risk-table, table) {
+        min-width: 640px;
+    }
+}
