@@ -49,27 +49,9 @@ const AdminUsers = () => {
       const { data } = await api.put(`/admin/users/${id}/unsuspend`);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, status: data?.status || 'active' } : u));
     } catch (err) {
-      const message = String(err?.response?.data?.error || err?.message || '');
-      const isMissingRoute = message.includes('Cannot PUT') || err?.response?.status === 404;
-
-      if (!isMissingRoute) {
-        console.error(err);
-        window.alert(message || 'Annulation de suspension impossible pour cet utilisateur');
-        return;
-      }
-
-      try {
-        const token = localStorage.getItem('token');
-        const fallbackApi = 'http://localhost:5000/api';
-        const { data } = await api.put(`${fallbackApi}/admin/users/${id}/unsuspend`, null, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: data?.status || 'active' } : u));
-      } catch (fallbackErr) {
-        console.error(fallbackErr);
-        const fallbackMessage = fallbackErr?.response?.data?.error || 'Annulation de suspension impossible pour cet utilisateur';
-        window.alert(fallbackMessage);
-      }
+      const message = err?.response?.data?.error || 'Annulation de suspension impossible pour cet utilisateur';
+      console.error(err);
+      window.alert(message);
     }
   };
 

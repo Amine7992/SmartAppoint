@@ -74,6 +74,10 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'smartappoint-backend' });
+});
+
 // API Routes
 app.use('/api/auth',         authLimiter, authRoutes);
 app.use('/api',              clientRoutes);

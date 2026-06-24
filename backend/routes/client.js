@@ -499,6 +499,7 @@ router.patch('/appointments/:id/favorite', async (req, res) => {
 // ---------------- STRIPE ----------------
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
 router.post('/appointments/:id/create-checkout-session', async (req, res) => {
   try {
@@ -530,8 +531,8 @@ router.post('/appointments/:id/create-checkout-session', async (req, res) => {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `http://localhost:3000/client/payment-success?appointment_id=${id}`,
-      cancel_url: `http://localhost:3000/client/appointments`,
+      success_url: `${frontendUrl}/client/payment-success?appointment_id=${id}`,
+      cancel_url: `${frontendUrl}/client/appointments`,
       metadata: { appointment_id: id },
     });
 
