@@ -15,9 +15,15 @@ export const getUserInitials = (user, fallback = 'US') => {
 const normalizeApiUrl = (value) => {
   const trimmed = String(value || '').trim();
   if (!trimmed) return 'http://localhost:5000/api';
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(trimmed)) return `http://${trimmed}`;
-  if (/^[\w.-]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(trimmed)) return `https://${trimmed}`;
+  if (/^https?:\/\//i.test(trimmed)) {
+    const url = new URL(trimmed);
+    if (!url.pathname || url.pathname === '/') {
+      url.pathname = '/api';
+    }
+    return url.toString().replace(/\/$/, '');
+  }
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(trimmed)) return normalizeApiUrl(`http://${trimmed}`);
+  if (/^[\w.-]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(trimmed)) return normalizeApiUrl(`https://${trimmed}`);
   return `http://localhost:5000${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
 };
 
