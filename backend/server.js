@@ -28,9 +28,17 @@ const {
 const app = express();
 
 // CORS Configuration
-const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
+const normalizeOrigin = (value) => String(value || '')
+  .trim()
+  .replace(/^['"]|['"]$/g, '')
+  .replace(/\/+$/, '');
 
-const allowedOrigins = String(process.env.CORS_ORIGIN || '')
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL,
+]
+  .filter(Boolean)
+  .join(',')
   .split(',')
   .map(normalizeOrigin)
   .filter(Boolean);
